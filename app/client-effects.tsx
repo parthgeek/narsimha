@@ -64,6 +64,10 @@ export default function ClientEffects() {
       const handler = () => {
         if (!lightbox || !lightboxImg) return;
         lightboxImg.src = figure.getAttribute("data-full") ?? "";
+        lightboxImg.classList.toggle(
+          "crop-from-bottom",
+          figure.hasAttribute("data-crop-bottom"),
+        );
         lightbox.classList.add("open");
       };
       figure.addEventListener("click", handler);
@@ -92,5 +96,4 @@ export default function ClientEffects() {
 
   return null;
 }
-
 
