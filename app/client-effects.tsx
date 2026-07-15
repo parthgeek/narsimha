@@ -1,4 +1,4 @@
-https://github.com/jatin-auxgens/narsimha.git"use client";
+"use client";
 
 import { useEffect } from "react";
 
@@ -92,6 +92,5 @@ export default function ClientEffects() {
 
   return null;
 }
-
 
 
