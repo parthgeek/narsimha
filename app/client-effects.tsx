@@ -156,15 +156,6 @@ export default function ClientEffects() {
       successMessage:
         "Your seva request has been sent. Please check your email for confirmation and temple contact details. ॐ",
     });
-    const detachEnquiryForm = attachForm({
-      formId: "enquiryForm",
-      statusId: "enquiryStatus",
-      endpoint: "/api/enquiry",
-      idleLabel: "Send Enquiry",
-      successMessage:
-        "Your enquiry has been sent. Please check your email for confirmation and temple contact details. ॐ",
-    });
-
     return () => {
       if (intervalId) clearInterval(intervalId);
       window.removeEventListener("scroll", handleScroll);
@@ -175,7 +166,6 @@ export default function ClientEffects() {
       lightboxClose?.removeEventListener("click", closeLightbox);
       lightbox?.removeEventListener("click", handleLightboxClick);
       detachSevaForm();
-      detachEnquiryForm();
     };
   }, []);
 
