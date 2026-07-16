@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
-const chantAudio = "/om-namo-narayanaya-108.mp3";
+const chantAudio =
+  "/Om%20Namo%20Bhagvate%20Vasudevaya%20-%20108%20Chants%20Gurudev%20-%20Meditations%20By%20Gurudev%20(192k).mp3";
 
 function formatTime(value: number) {
   if (!Number.isFinite(value) || value < 0) return "0:00";
@@ -143,7 +144,7 @@ export default function ChantPlayer() {
           type="button"
           className={`chant-dock${playing ? " is-playing" : ""}`}
           onClick={() => setExpanded(true)}
-          aria-label="Open Om Namo Narayanaya chant controls"
+          aria-label="Open Om Namo Bhagvate Vasudevaya chant controls"
         >
           <span className="chant-dock-avatar" aria-hidden="true">
             <img src="/icon.png" alt="" />
@@ -163,7 +164,11 @@ export default function ChantPlayer() {
             className="chant-play"
             onClick={togglePlayback}
             disabled={audioError}
-            aria-label={playing ? "Pause Om Namo Narayanaya chant" : "Play Om Namo Narayanaya chant"}
+            aria-label={
+              playing
+                ? "Pause Om Namo Bhagvate Vasudevaya chant"
+                : "Play Om Namo Bhagvate Vasudevaya chant"
+            }
           >
             <PlayIcon playing={playing} />
           </button>
@@ -172,9 +177,15 @@ export default function ChantPlayer() {
             <div className="chant-heading">
               <div aria-live="polite">
                 <span className="chant-eyebrow">
-                  {audioError ? "Audio unavailable" : "108 Repetitions · Sacred Audio"}
+                  {audioError
+                    ? "Audio unavailable"
+                    : "108 Chants · Meditations by Gurudev"}
                 </span>
-                <strong>{audioError ? "Please try again later" : "Om Namo Narayanaya"}</strong>
+                <strong>
+                  {audioError
+                    ? "Please try again later"
+                    : "Om Namo Bhagvate Vasudevaya"}
+                </strong>
               </div>
               <button
                 type="button"

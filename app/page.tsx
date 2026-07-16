@@ -26,8 +26,75 @@ const heroSlides = [
   },
 ];
 
+const sanctumGallerySlides = heroSlides.slice(0, 3);
 const galleryCornerMarkup =
   '<i class="rf-corner tl"></i><i class="rf-corner tr"></i><i class="rf-corner bl"></i><i class="rf-corner br"></i>';
+
+function curateSanctumGallery(body: string) {
+  const sectionStart = body.indexOf("<!-- GALLERY -->");
+  const galleryStart = body.indexOf('<div class="gallery-grid">', sectionStart);
+
+  if (sectionStart === -1 || galleryStart === -1) return body;
+
+  const galleryContentStart = body.indexOf(">", galleryStart) + 1;
+  const galleryEnd = body.indexOf("</div>", galleryContentStart);
+  if (galleryEnd === -1) return body;
+
+  const galleryContent = body.slice(galleryContentStart, galleryEnd);
+
+  const originalFigures = Array.from(
+    galleryContent.matchAll(/<figure[\s\S]*?<\/figure>/g),
+    (match) => match[0],
+  )
+    .filter((_figure, index) => index !== 1 && index !== 2)
+    .map((figure) =>
+      figure
+        .replace(/class="([^"]*)"/, (_match, classNames: string) => {
+          const classes = classNames
+            .split(/\s+/)
+            .filter((className) => className !== "tall" && className !== "wide");
+          if (!classes.includes("sanctum-photo")) classes.push("sanctum-photo");
+          return `class="${classes.join(" ")}"`;
+        })
+        .replace("<img ", '<img loading="lazy" '),
+    );
+
+  const addedFigures = sanctumGallerySlides
+    .map(
+      ({ src, alt }) =>
+        `<figure class="reveal royal-frame-sm sanctum-photo" data-full="${src}"><img src="${src}" alt="${alt}" loading="lazy">${galleryCornerMarkup}</figure>`,
+    );
+  const galleryFigures = [...originalFigures, ...addedFigures].join("\n      ");
+
+  return `${body.slice(0, galleryStart)}<div class="gallery-grid sanctum-gallery">
+      ${galleryFigures}
+    </div>${body.slice(galleryEnd + "</div>".length)}`;
+}
+
+function removeArchitectureGallery(body: string) {
+  const sectionStart = body.indexOf("<!-- ARCHITECTURE -->");
+  const sectionEnd = body.indexOf("<!-- DEITY -->", sectionStart);
+  const galleryStart = body.indexOf(
+    '<div class="gallery-grid" style="margin-top:56px;">',
+    sectionStart,
+  );
+
+  if (
+    sectionStart === -1 ||
+    sectionEnd === -1 ||
+    galleryStart === -1 ||
+    galleryStart > sectionEnd
+  ) {
+    return body;
+  }
+
+  const galleryEnd = body.indexOf("</div>", galleryStart);
+  if (galleryEnd === -1 || galleryEnd > sectionEnd) return body;
+
+  return `${body.slice(0, galleryStart)}${body.slice(
+    galleryEnd + "</div>".length,
+  )}`;
+}
 
 function getOriginalPageParts() {
   const htmlPath = path.join(process.cwd(), "Yoga Narsimha Website.html");
@@ -48,23 +115,13 @@ function getOriginalPageParts() {
     )
     .join("\n          ");
 
-  const galleryMarkup = heroSlides
-    .filter(({ src }) => src === "/1.png" || src === "/3.png")
-    .map(
-      ({ src, alt }) =>
-        `<figure class="reveal royal-frame-sm" data-full="${src}" data-crop-bottom><img class="crop-from-bottom" src="${src}" alt="${alt}" loading="lazy">${galleryCornerMarkup}</figure>`,
-    )
-    .join("\n      ");
-
-  const body = originalBody
-    .replace(
-      /<div class="clip">[\s\S]*?<\/div>\s*(<i class="rf-corner tl">)/,
-      `<div class="clip">\n          ${slidesMarkup}\n        </div>\n        $1`,
-    )
-    .replace(
-      /<div class="gallery-grid" style="margin-top:56px;">([\s\S]*?)<\/div>\s*<\/div>\s*<\/section>\s*<!-- DEITY -->/,
-      `<div class="gallery-grid architecture-gallery" style="margin-top:56px;">$1\n      ${galleryMarkup}\n    </div>\n  </div>\n</section>\n\n<!-- DEITY -->`,
-    );
+  const bodyWithUpdatedHero = originalBody.replace(
+    /<div class="clip">[\s\S]*?<\/div>\s*(<i class="rf-corner tl">)/,
+    `<div class="clip">\n          ${slidesMarkup}\n        </div>\n        $1`,
+  );
+  const body = curateSanctumGallery(
+    removeArchitectureGallery(bodyWithUpdatedHero),
+  );
 
   const style = `${originalStyle}
 
@@ -73,11 +130,24 @@ function getOriginalPageParts() {
     object-position:center top;
   }
 
-  .gallery-grid.architecture-gallery{
-    grid-template-columns:repeat(5,minmax(0,1fr));
+  .gallery-grid.sanctum-gallery{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-auto-rows:auto;
+    gap:18px;
+    align-items:start;
   }
-  .gallery-grid img.crop-from-bottom{
-    object-position:center top;
+  .gallery-grid.sanctum-gallery figure{
+    aspect-ratio:3 / 4;
+    background:#0b0805;
+  }
+  .gallery-grid.sanctum-gallery img{
+    object-fit:contain;
+    object-position:center;
+    filter:saturate(0.96) brightness(0.96);
+  }
+  .gallery-grid.sanctum-gallery figure:hover img{
+    transform:none;
+    filter:saturate(1) brightness(1);
   }
   .lightbox img.crop-from-bottom{
     width:min(90vw, calc(90vh * 0.5025));
@@ -86,15 +156,11 @@ function getOriginalPageParts() {
     object-position:center top;
   }
   @media (max-width:1100px){
-    .gallery-grid.architecture-gallery{ grid-template-columns:repeat(3,minmax(0,1fr)); }
-  }
-  @media (max-width:880px){
-    .gallery-grid.architecture-gallery{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .gallery-grid.sanctum-gallery{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   }
   @media (max-width:520px){
-    .gallery-grid.architecture-gallery{
+    .gallery-grid.sanctum-gallery{
       grid-template-columns:1fr;
-      grid-auto-rows:230px;
     }
   }
   `;
