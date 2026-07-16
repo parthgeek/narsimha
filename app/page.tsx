@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import ChantPlayer from "./chant-player";
 import ClientEffects from "./client-effects";
 
 const heroSlides = [
@@ -108,6 +109,7 @@ export default function Home() {
     <>
       <style dangerouslySetInnerHTML={{ __html: style }} />
       <main dangerouslySetInnerHTML={{ __html: body }} />
+      <ChantPlayer />
       <ClientEffects />
     </>
   );

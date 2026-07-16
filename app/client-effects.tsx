@@ -82,6 +82,89 @@ export default function ClientEffects() {
     lightboxClose?.addEventListener("click", closeLightbox);
     lightbox?.addEventListener("click", handleLightboxClick);
 
+    const attachForm = ({
+      formId,
+      statusId,
+      endpoint,
+      idleLabel,
+      successMessage,
+    }: {
+      formId: string;
+      statusId: string;
+      endpoint: string;
+      idleLabel: string;
+      successMessage: string;
+    }) => {
+      const form = document.getElementById(formId) as HTMLFormElement | null;
+      const status = document.getElementById(statusId);
+
+      const handleSubmit = async (event: SubmitEvent) => {
+        event.preventDefault();
+        if (!form) return;
+
+        const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Sending…";
+        }
+        if (status) status.className = "seva-status";
+
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(
+              Object.fromEntries(
+                new FormData(form) as unknown as Iterable<[string, string]>,
+              ),
+            ),
+          });
+          const data = (await response.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          if (!response.ok) throw new Error(data.error || "Request failed");
+
+          form.reset();
+          if (status) {
+            status.textContent = successMessage;
+            status.className = "seva-status show ok";
+          }
+        } catch (error) {
+          if (status) {
+            status.textContent =
+              (error instanceof Error && error.message) ||
+              "Something went wrong. Please call +91 99647 62267 or email yoganarasimhabaggavalli@gmail.com.";
+            status.className = "seva-status show err";
+          }
+        } finally {
+          if (button) {
+            button.disabled = false;
+            button.textContent = idleLabel;
+          }
+        }
+      };
+
+      form?.addEventListener("submit", handleSubmit);
+      return () => form?.removeEventListener("submit", handleSubmit);
+    };
+
+    const detachSevaForm = attachForm({
+      formId: "sevaForm",
+      statusId: "sevaStatus",
+      endpoint: "/api/seva",
+      idleLabel: "Submit Seva Request",
+      successMessage:
+        "Your seva request has been sent. Please check your email for confirmation and temple contact details. ॐ",
+    });
+    const detachEnquiryForm = attachForm({
+      formId: "enquiryForm",
+      statusId: "enquiryStatus",
+      endpoint: "/api/enquiry",
+      idleLabel: "Send Enquiry",
+      successMessage:
+        "Your enquiry has been sent. Please check your email for confirmation and temple contact details. ॐ",
+    });
+
     return () => {
       if (intervalId) clearInterval(intervalId);
       window.removeEventListener("scroll", handleScroll);
@@ -91,9 +174,10 @@ export default function ClientEffects() {
       });
       lightboxClose?.removeEventListener("click", closeLightbox);
       lightbox?.removeEventListener("click", handleLightboxClick);
+      detachSevaForm();
+      detachEnquiryForm();
     };
   }, []);
 
   return null;
 }
-
