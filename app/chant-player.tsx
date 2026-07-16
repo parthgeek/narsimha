@@ -52,7 +52,7 @@ export default function ChantPlayer() {
     const audio = audioRef.current;
     if (!audio) return;
 
-    audio.volume = 0.5;
+    audio.volume = 0.4;
 
     const startAudio = async () => {
       try {
