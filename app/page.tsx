@@ -96,6 +96,23 @@ function removeArchitectureGallery(body: string) {
   )}`;
 }
 
+function addArchitectureExterior(body: string) {
+  const architectureCopyPattern =
+    /<div class="reveal">\s*(<p>The temple sits on a[\s\S]*?<\/p>\s*<p>It follows the compact[\s\S]*?<\/p>)\s*<\/div>/;
+
+  return body.replace(
+    architectureCopyPattern,
+    `<div class="reveal architecture-copy">
+        <div class="art architecture-exterior royal-frame">
+          <img src="/outsidetemple.png" alt="Exterior view of the Yoga Narasimha Temple at Baggavalli">
+          ${galleryCornerMarkup}
+          <div class="frame-tag">Temple Exterior</div>
+        </div>
+        <div class="architecture-text">$1</div>
+      </div>`,
+  );
+}
+
 function updateTopbarIcon(body: string) {
   return body.replace(
     /(<header class="nav" id="siteNav">\s*<div class="brand"><img\s+src=")[^"]+("[^>]*>)/,
@@ -128,7 +145,7 @@ function getOriginalPageParts() {
     `<div class="clip">\n          ${slidesMarkup}\n        </div>\n        $1`,
   );
   const body = curateSanctumGallery(
-    removeArchitectureGallery(bodyWithUpdatedHero),
+    addArchitectureExterior(removeArchitectureGallery(bodyWithUpdatedHero)),
   );
 
   const style = `${originalStyle}
@@ -167,6 +184,32 @@ function getOriginalPageParts() {
     aspect-ratio:593 / 1180;
     object-fit:cover;
     object-position:center top;
+  }
+  .architecture-copy{
+    display:flex;
+    flex-direction:column;
+    gap:38px;
+    align-self:stretch;
+    justify-content:center;
+  }
+  .architecture-exterior{
+    width:100%;
+  }
+  .about-grid.reverse .architecture-exterior{
+    order:0;
+  }
+  .architecture-exterior img{
+    aspect-ratio:3 / 2;
+    object-fit:cover;
+    object-position:center;
+  }
+  .architecture-text p:last-child{
+    margin-bottom:0;
+  }
+  @media (min-width:881px){
+    #deity .deity-wrap .star-frame{
+      transform:translateX(28px);
+    }
   }
   @media (max-width:1100px){
     .gallery-grid.sanctum-gallery{ grid-template-columns:repeat(2,minmax(0,1fr)); }

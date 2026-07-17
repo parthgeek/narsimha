@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 
 const chantAudio =
   "/Om%20Namo%20Bhagvate%20Vasudevaya%20-%20108%20Chants%20Gurudev%20-%20Meditations%20By%20Gurudev%20(192k).mp3";
@@ -45,9 +51,26 @@ export default function ChantPlayer() {
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(false);
   const [audioError, setAudioError] = useState(false);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
+
+  const playAudio = useCallback(async () => {
+    const audio = audioRef.current;
+    if (!audio) return false;
+
+    try {
+      await audio.play();
+      setAutoplayBlocked(false);
+      return true;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "NotAllowedError") {
+        setAutoplayBlocked(true);
+      }
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -55,41 +78,41 @@ export default function ChantPlayer() {
 
     audio.volume = 0.4;
 
-    const startAudio = async () => {
-      try {
-        await audio.play();
-      } catch {
-        // Audible autoplay can be blocked. The first visitor interaction retries it.
-      }
+    const removeInteractionListeners = () => {
+      window.removeEventListener("click", startAfterInteraction);
+      window.removeEventListener("touchend", startAfterInteraction);
+      window.removeEventListener("keydown", startAfterInteraction);
     };
 
     const startAfterInteraction = () => {
-      if (audio.paused) void startAudio();
-      window.removeEventListener("pointerdown", startAfterInteraction);
-      window.removeEventListener("keydown", startAfterInteraction);
+      if (!audio.paused) {
+        removeInteractionListeners();
+        return;
+      }
+
+      void playAudio().then((started) => {
+        if (started) removeInteractionListeners();
+      });
     };
 
-    void startAudio();
-    window.addEventListener("pointerdown", startAfterInteraction, { once: true });
-    window.addEventListener("keydown", startAfterInteraction, { once: true });
+    void playAudio();
+    window.addEventListener("click", startAfterInteraction);
+    window.addEventListener("touchend", startAfterInteraction);
+    window.addEventListener("keydown", startAfterInteraction);
 
     return () => {
       audio.pause();
-      window.removeEventListener("pointerdown", startAfterInteraction);
-      window.removeEventListener("keydown", startAfterInteraction);
+      removeInteractionListeners();
     };
-  }, []);
+  }, [playAudio]);
 
   const togglePlayback = async () => {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (audio.paused) {
-      try {
-        await audio.play();
-      } catch {
-        setPlaying(false);
-      }
+      const started = await playAudio();
+      if (!started) setPlaying(false);
     } else {
       audio.pause();
     }
@@ -131,7 +154,10 @@ export default function ChantPlayer() {
           setPlaying(false);
         }}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
-        onPlay={() => setPlaying(true)}
+        onPlay={() => {
+          setPlaying(true);
+          setAutoplayBlocked(false);
+        }}
         onPause={() => setPlaying(false)}
         onEnded={() => {
           setPlaying(false);
@@ -143,14 +169,17 @@ export default function ChantPlayer() {
         <button
           type="button"
           className={`chant-dock${playing ? " is-playing" : ""}`}
-          onClick={() => setExpanded(true)}
+          onClick={() => {
+            setExpanded(true);
+            if (!playing) void playAudio();
+          }}
           aria-label="Open Om Namo Bhagvate Vasudevaya chant controls"
         >
           <span className="chant-dock-avatar" aria-hidden="true">
             <img src="/icon.png" alt="" />
             <span className="chant-dock-status" />
           </span>
-          <span>Chant</span>
+          <span>{autoplayBlocked ? "Tap to play chant" : "Chant"}</span>
         </button>
       ) : (
         <aside
@@ -179,6 +208,8 @@ export default function ChantPlayer() {
                 <span className="chant-eyebrow">
                   {audioError
                     ? "Audio unavailable"
+                    : autoplayBlocked
+                      ? "Press play to begin"
                     : "108 Chants · Meditations by Gurudev"}
                 </span>
                 <strong>
