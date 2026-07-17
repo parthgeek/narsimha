@@ -96,6 +96,13 @@ function removeArchitectureGallery(body: string) {
   )}`;
 }
 
+function updateTopbarIcon(body: string) {
+  return body.replace(
+    /(<header class="nav" id="siteNav">\s*<div class="brand"><img\s+src=")[^"]+("[^>]*>)/,
+    "$1/3.png$2",
+  );
+}
+
 function getOriginalPageParts() {
   const htmlPath = path.join(process.cwd(), "Yoga Narsimha Website.html");
   const html = readFileSync(htmlPath, "utf8");
@@ -115,7 +122,8 @@ function getOriginalPageParts() {
     )
     .join("\n          ");
 
-  const bodyWithUpdatedHero = originalBody.replace(
+  const bodyWithUpdatedTopbar = updateTopbarIcon(originalBody);
+  const bodyWithUpdatedHero = bodyWithUpdatedTopbar.replace(
     /<div class="clip">[\s\S]*?<\/div>\s*(<i class="rf-corner tl">)/,
     `<div class="clip">\n          ${slidesMarkup}\n        </div>\n        $1`,
   );
@@ -128,6 +136,11 @@ function getOriginalPageParts() {
   /* Keep the top of tall shrine portraits visible and discard the camera strip at the bottom. */
   .hero-slide-img.crop-from-bottom{
     object-position:center top;
+  }
+
+  header.nav .brand-logo{
+    object-fit:cover;
+    object-position:center 34%;
   }
 
   .gallery-grid.sanctum-gallery{
