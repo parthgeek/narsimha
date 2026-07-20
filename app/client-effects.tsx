@@ -82,6 +82,127 @@ export default function ClientEffects() {
     lightboxClose?.addEventListener("click", closeLightbox);
     lightbox?.addEventListener("click", handleLightboxClick);
 
+    const templeViewer = document.getElementById("templeViewer");
+    const templeScene = document.getElementById("templeScene");
+    const viewControls = Array.from(
+      templeViewer?.querySelectorAll<HTMLButtonElement>("[data-view-control]") ?? [],
+    );
+    let panX = 0;
+    let panY = 0;
+    let zoom = 1.08;
+    let activePointer: number | null = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragStartPanX = panX;
+    let dragStartPanY = panY;
+
+    const clamp = (value: number, min: number, max: number) =>
+      Math.min(max, Math.max(min, value));
+
+    const constrainPan = () => {
+      if (!templeScene) return;
+      const maxX = (templeScene.clientWidth * (zoom - 1)) / 2;
+      const maxY = (templeScene.clientHeight * (zoom - 1)) / 2;
+      panX = clamp(panX, -maxX, maxX);
+      panY = clamp(panY, -maxY, maxY);
+    };
+
+    const updateTempleView = () => {
+      constrainPan();
+      templeScene?.style.setProperty("--photo-x", `${panX}px`);
+      templeScene?.style.setProperty("--photo-y", `${panY}px`);
+      templeScene?.style.setProperty("--photo-zoom", String(zoom));
+    };
+
+    const markViewerUsed = () => templeViewer?.classList.add("has-interacted");
+    const resetTempleView = () => {
+      panX = 0;
+      panY = 0;
+      zoom = 1.08;
+      updateTempleView();
+    };
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!templeScene || event.button !== 0) return;
+      activePointer = event.pointerId;
+      dragStartX = event.clientX;
+      dragStartY = event.clientY;
+      dragStartPanX = panX;
+      dragStartPanY = panY;
+      templeScene.setPointerCapture(event.pointerId);
+      templeScene.classList.add("is-dragging");
+      markViewerUsed();
+    };
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (activePointer !== event.pointerId) return;
+      panX = dragStartPanX + event.clientX - dragStartX;
+      panY = dragStartPanY + event.clientY - dragStartY;
+      updateTempleView();
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      if (!templeScene || activePointer !== event.pointerId) return;
+      if (templeScene.hasPointerCapture(event.pointerId)) {
+        templeScene.releasePointerCapture(event.pointerId);
+      }
+      activePointer = null;
+      templeScene.classList.remove("is-dragging");
+    };
+
+    const handleTempleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      zoom = clamp(zoom - event.deltaY * 0.0012, 1, 2.6);
+      markViewerUsed();
+      updateTempleView();
+    };
+
+    const handleTempleKeydown = (event: KeyboardEvent) => {
+      const keyActions: Record<string, () => void> = {
+        ArrowLeft: () => (panX += 28),
+        ArrowRight: () => (panX -= 28),
+        ArrowUp: () => (panY += 28),
+        ArrowDown: () => (panY -= 28),
+        "+": () => (zoom = clamp(zoom + 0.14, 1, 2.6)),
+        "=": () => (zoom = clamp(zoom + 0.14, 1, 2.6)),
+        "-": () => (zoom = clamp(zoom - 0.14, 1, 2.6)),
+        "0": resetTempleView,
+      };
+      const action = keyActions[event.key];
+      if (!action) return;
+      event.preventDefault();
+      action();
+      markViewerUsed();
+      updateTempleView();
+    };
+
+    const handleViewControl = (event: Event) => {
+      const button = event.currentTarget as HTMLButtonElement;
+      const control = button.dataset.viewControl;
+      markViewerUsed();
+      if (control === "zoom-in") zoom = clamp(zoom + 0.18, 1, 2.6);
+      if (control === "zoom-out") zoom = clamp(zoom - 0.18, 1, 2.6);
+      if (control === "reset") resetTempleView();
+      if (control === "fullscreen" && templeViewer) {
+        if (document.fullscreenElement === templeViewer) {
+          void document.exitFullscreen().catch(() => undefined);
+        } else {
+          void templeViewer.requestFullscreen().catch(() => undefined);
+        }
+      }
+      updateTempleView();
+    };
+
+    templeScene?.addEventListener("pointerdown", handlePointerDown);
+    templeScene?.addEventListener("pointermove", handlePointerMove);
+    templeScene?.addEventListener("pointerup", handlePointerUp);
+    templeScene?.addEventListener("pointercancel", handlePointerUp);
+    templeScene?.addEventListener("wheel", handleTempleWheel, { passive: false });
+    templeScene?.addEventListener("keydown", handleTempleKeydown);
+    templeScene?.addEventListener("dblclick", resetTempleView);
+    viewControls.forEach((button) => button.addEventListener("click", handleViewControl));
+    updateTempleView();
+
     const attachForm = ({
       formId,
       statusId,
@@ -165,6 +286,16 @@ export default function ClientEffects() {
       });
       lightboxClose?.removeEventListener("click", closeLightbox);
       lightbox?.removeEventListener("click", handleLightboxClick);
+      templeScene?.removeEventListener("pointerdown", handlePointerDown);
+      templeScene?.removeEventListener("pointermove", handlePointerMove);
+      templeScene?.removeEventListener("pointerup", handlePointerUp);
+      templeScene?.removeEventListener("pointercancel", handlePointerUp);
+      templeScene?.removeEventListener("wheel", handleTempleWheel);
+      templeScene?.removeEventListener("keydown", handleTempleKeydown);
+      templeScene?.removeEventListener("dblclick", resetTempleView);
+      viewControls.forEach((button) =>
+        button.removeEventListener("click", handleViewControl),
+      );
       detachSevaForm();
     };
   }, []);
