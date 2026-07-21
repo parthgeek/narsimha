@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "leaflet/dist/leaflet.css";
 
 export const metadata: Metadata = {
   title: "Sri Yoga Narasimha Swamy Temple - Baggavalli",

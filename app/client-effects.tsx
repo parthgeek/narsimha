@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import type { LatLngExpression, Map as LeafletMap } from "leaflet";
 
 export default function ClientEffects() {
   useEffect(() => {
@@ -81,6 +82,50 @@ export default function ClientEffects() {
 
     lightboxClose?.addEventListener("click", closeLightbox);
     lightbox?.addEventListener("click", handleLightboxClick);
+
+    const templeMapElement = document.getElementById("templeMap");
+    let templeMap: LeafletMap | undefined;
+    let mapEffectDisposed = false;
+
+    const initializeTempleMap = async () => {
+      if (!templeMapElement) return;
+
+      const { default: L } = await import("leaflet");
+      if (mapEffectDisposed || !templeMapElement.isConnected) return;
+
+      const templeCoordinates: LatLngExpression = [13.6930702, 75.9720447];
+      templeMap = L.map(templeMapElement, {
+        scrollWheelZoom: false,
+        zoomControl: true,
+        attributionControl: false,
+      }).setView(templeCoordinates, 14);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(templeMap);
+
+      const templeLogoMarker = L.divIcon({
+        className: "temple-logo-marker",
+        html: '<span class="temple-logo-marker-shell"><img src="/icon.png" alt=""></span>',
+        iconSize: [70, 80],
+        iconAnchor: [35, 74],
+        popupAnchor: [0, -72],
+      });
+
+      L.marker(templeCoordinates, {
+        icon: templeLogoMarker,
+        title: "Sri Yoga Narasimha Swamy Temple",
+        alt: "Sri Yoga Narasimha Swamy Temple",
+      })
+        .addTo(templeMap)
+        .bindPopup(
+          "<strong>Sri Yoga Narasimha Swamy Temple</strong><span>Baggavalli, Karnataka 577547</span>",
+        );
+
+      window.requestAnimationFrame(() => templeMap?.invalidateSize());
+    };
+
+    void initializeTempleMap();
 
     const templeViewer = document.getElementById("templeViewer");
     const templeScene = document.getElementById("templeScene");
@@ -278,6 +323,7 @@ export default function ClientEffects() {
         "Your seva request has been sent. Please check your email for confirmation and temple contact details. ॐ",
     });
     return () => {
+      mapEffectDisposed = true;
       if (intervalId) clearInterval(intervalId);
       window.removeEventListener("scroll", handleScroll);
       observer?.disconnect();
@@ -286,6 +332,7 @@ export default function ClientEffects() {
       });
       lightboxClose?.removeEventListener("click", closeLightbox);
       lightbox?.removeEventListener("click", handleLightboxClick);
+      templeMap?.remove();
       templeScene?.removeEventListener("pointerdown", handlePointerDown);
       templeScene?.removeEventListener("pointermove", handlePointerMove);
       templeScene?.removeEventListener("pointerup", handlePointerUp);

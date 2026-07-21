@@ -129,8 +129,8 @@ function updateTopbarIcon(body: string) {
       "$1/3.png$2",
     )
     .replace(
-      '<a href="#gallery">Gallery</a>',
-      '<a href="#gallery">Gallery</a><a href="#experience">Temple Location</a>',
+      '<a href="#visit">Visit</a>',
+      '<a href="#experience">Visit</a>',
     );
 }
 
@@ -144,41 +144,52 @@ function updateDeityImage(body: string) {
 const templeExperienceMarkup = `
 <!-- TEMPLE LOCATION MAP -->
 <section id="experience" class="temple-experience">
-  <div class="section-inner experience-grid">
-    <div class="experience-copy reveal in">
-      <div class="kicker">Temple Location</div>
-      <h2>Find your way to Baggavalli</h2>
-      <p class="lead">Sri Yoga Narasimha Swamy Temple is located in Baggavalli village, near Ajjampura in Karnataka.</p>
-      <p>Use the interactive map to inspect the surrounding roads, open the location in Google Maps, or begin navigation from your current location.</p>
-      <div class="experience-notes" aria-label="Temple location details">
-        <span><b>Village</b> Baggavalli</span>
-        <span><b>Taluk</b> Ajjampura</span>
-        <span><b>PIN</b> 577547</span>
+  <div class="section-inner">
+    <div class="experience-grid">
+      <div class="experience-copy reveal in">
+        <div class="kicker">Temple Location</div>
+        <h2>Find your way to Baggavalli</h2>
+        <p class="lead">Sri Yoga Narasimha Swamy Temple is located in Baggavalli village, near Ajjampura in Karnataka.</p>
+        <p>Use the interactive map to inspect the surrounding roads, open the location in Google Maps, or begin navigation from your current location.</p>
+        <div class="experience-notes" aria-label="Temple location details">
+          <span><b>Village</b> Baggavalli</span>
+          <span><b>Taluk</b> Ajjampura</span>
+          <span><b>District</b> Chikkamagaluru</span>
+          <span><b>PIN</b> 577547</span>
+          <span><b>From Ajjampura</b> About 3 km</span>
+        </div>
+        <a class="experience-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=Sri+Yoga+Narasimha+Swamy+Temple+Baggavalli+Ajjampura+Karnataka" target="_blank" rel="noopener noreferrer">Get directions in Google Maps <span aria-hidden="true">↗</span></a>
       </div>
-      <a class="experience-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=Sri+Yoga+Narasimha+Swamy+Temple+Baggavalli+Ajjampura+Karnataka" target="_blank" rel="noopener noreferrer">Get directions in Google Maps <span aria-hidden="true">↗</span></a>
+
+      <div class="temple-map-card reveal in">
+        <div id="templeMap" class="temple-map" role="application" aria-label="Interactive map showing Sri Yoga Narasimha Swamy Temple in Baggavalli"></div>
+      </div>
     </div>
 
-    <div class="temple-map-card reveal in">
-      <div class="temple-map-heading">
-        <span class="map-pin" aria-hidden="true"></span>
+    <div class="visit-essentials reveal">
+      <div class="visit-essentials-heading">
         <div>
-          <strong>Sri Yoga Narasimha Swamy Temple</strong>
-          <span>Baggavalli, Karnataka</span>
+          <div class="kicker">Plan Your Darshan</div>
+          <h3>Before you visit</h3>
         </div>
+        <p>Village temple schedules may change with the season and priest availability. Confirm locally before making a long journey.</p>
       </div>
-      <iframe
-        title="Google Map showing Sri Yoga Narasimha Swamy Temple in Baggavalli"
-        src="https://www.google.com/maps?q=Sri%20Yoga%20Narasimha%20Swamy%20Temple%2C%20Baggavalli%2C%20Ajjampura%2C%20Karnataka%20577547&amp;output=embed"
-        loading="lazy"
-        allowfullscreen
-        referrerpolicy="strict-origin-when-cross-origin">
-      </iframe>
+      <div class="visit-essentials-grid">
+        <div class="visit-essential"><span>Typical hours</span><strong>11:30–2:30<br>5:30–6:30</strong></div>
+        <div class="visit-essential"><span>Entry</span><strong>Free</strong></div>
+        <div class="visit-essential"><span>Dress</span><strong>Modest, temple-appropriate</strong></div>
+        <div class="visit-essential"><span>Best for</span><strong>Quiet darshan, heritage &amp; photography</strong></div>
+      </div>
+      <p class="visit-essentials-note">The shrine is a working temple as well as a protected monument. Photography and footwear norms are set on site.</p>
     </div>
   </div>
 </section>`;
 
 function addTempleExperience(body: string) {
-  return body.replace("<!-- VISIT -->", `${templeExperienceMarkup}\n\n<!-- VISIT -->`);
+  return body.replace(
+    /<!-- VISIT -->[\s\S]*?<!-- SEVA -->/,
+    `${templeExperienceMarkup}\n\n<!-- SEVA -->`,
+  );
 }
 
 function getOriginalPageParts() {
@@ -318,7 +329,7 @@ function getOriginalPageParts() {
   .experience-grid{
     display:grid;
     grid-template-columns:minmax(300px,.76fr) minmax(520px,1.24fr);
-    align-items:center;
+    align-items:stretch;
     gap:clamp(42px,6vw,92px);
   }
   .experience-copy h2{
@@ -365,6 +376,148 @@ function getOriginalPageParts() {
   .experience-map-link:hover span{ transform:translate(3px,-3px); }
   .experience-map-link:focus-visible{ outline:2px solid var(--gold); outline-offset:6px; }
 
+  .visit-essentials{
+    margin-top:clamp(62px,8vw,104px);
+    padding-top:clamp(36px,5vw,56px);
+    border-top:1px solid var(--stone-line);
+  }
+  .visit-essentials-heading{
+    display:grid;
+    grid-template-columns:minmax(260px,.8fr) minmax(320px,1.2fr);
+    align-items:end;
+    gap:48px;
+    margin-bottom:32px;
+  }
+  .visit-essentials-heading h3{
+    margin-top:10px;
+    color:var(--ivory);
+    font-family:'Cinzel',serif;
+    font-size:clamp(1.8rem,3vw,2.8rem);
+    font-weight:500;
+    letter-spacing:-.025em;
+  }
+  .visit-essentials-heading p{
+    max-width:660px;
+    margin:0;
+    color:var(--taupe);
+    line-height:1.75;
+  }
+  .visit-essentials-grid{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    border-top:1px solid rgba(212,160,23,.25);
+    border-bottom:1px solid rgba(212,160,23,.25);
+  }
+  .visit-essential{
+    min-height:142px;
+    padding:25px 24px 28px;
+    border-right:1px solid rgba(212,160,23,.2);
+  }
+  .visit-essential:last-child{ border-right:0; }
+  .visit-essential span{
+    display:block;
+    margin-bottom:13px;
+    color:var(--gold);
+    font-size:.66rem;
+    font-weight:600;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  .visit-essential strong{
+    color:var(--ivory);
+    font-family:'Cormorant Garamond',serif;
+    font-size:clamp(1.12rem,1.6vw,1.38rem);
+    font-weight:500;
+    line-height:1.35;
+  }
+  .visit-essentials-note{
+    max-width:920px;
+    margin:24px 0 0;
+    color:var(--taupe-dim);
+    font-size:.82rem;
+    line-height:1.7;
+  }
+
+  .temple-map-card{
+    position:relative;
+    min-height:0;
+    overflow:hidden;
+    border:1px solid rgba(212,160,23,.35);
+    border-radius:3px;
+    background:#17100a;
+    box-shadow:0 35px 90px rgba(5,3,2,.52), inset 0 0 0 1px rgba(255,244,207,.035);
+  }
+  .temple-map{
+    display:block;
+    width:100%;
+    height:100%;
+    min-height:0;
+    filter:saturate(.78) sepia(.12) contrast(1.04);
+  }
+  .temple-map .leaflet-control-zoom a{
+    border-color:rgba(212,160,23,.3);
+    background:#17100a;
+    color:var(--gold-bright);
+  }
+  .temple-map .leaflet-control-zoom a:hover{ background:#261a10; color:var(--ivory); }
+  .temple-map .leaflet-control-attribution{
+    background:rgba(15,10,7,.84);
+    color:var(--taupe);
+    font-size:.64rem;
+  }
+  .temple-map .leaflet-control-attribution a{ color:var(--gold-bright); }
+  .temple-logo-marker{
+    border:0;
+    background:transparent;
+  }
+  .temple-logo-marker-shell{
+    position:relative;
+    z-index:1;
+    display:block;
+    width:64px;
+    height:64px;
+    border:3px solid var(--gold-bright);
+    border-radius:50%;
+    background:#100b07;
+    box-shadow:0 8px 24px rgba(5,3,2,.55),0 0 0 5px rgba(212,160,23,.18);
+  }
+  .temple-logo-marker-shell::after{
+    content:'';
+    position:absolute;
+    left:50%;
+    bottom:-10px;
+    width:17px;
+    height:17px;
+    border-right:3px solid var(--gold-bright);
+    border-bottom:3px solid var(--gold-bright);
+    background:#100b07;
+    transform:translateX(-50%) rotate(45deg);
+    z-index:-1;
+  }
+  .temple-logo-marker-shell img{
+    display:block;
+    width:100%;
+    height:100%;
+    border-radius:50%;
+    object-fit:cover;
+  }
+  .temple-map .leaflet-popup-content-wrapper,
+  .temple-map .leaflet-popup-tip{
+    border:1px solid rgba(212,160,23,.35);
+    background:#17100a;
+    color:var(--ivory);
+  }
+  .temple-map .leaflet-popup-content{ margin:14px 18px; line-height:1.45; }
+  .temple-map .leaflet-popup-content strong{
+    display:block;
+    margin-bottom:3px;
+    color:var(--gold-bright);
+    font-family:'Cinzel',serif;
+    font-size:.78rem;
+    font-weight:500;
+  }
+  .temple-map .leaflet-popup-content span{ color:var(--taupe); font-size:.72rem; }
+  .temple-map .leaflet-popup-close-button{ color:var(--gold-bright); }
   .temple-viewer{
     position:relative;
     min-height:clamp(520px,58vw,680px);
@@ -505,12 +658,22 @@ function getOriginalPageParts() {
     .experience-grid{ grid-template-columns:1fr; }
     .experience-copy{ max-width:680px; }
     .temple-viewer{ min-height:min(680px,78vw); }
+    .temple-map-card,.temple-map{ min-height:min(680px,78vw); }
+    .visit-essentials-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .visit-essential:nth-child(2){ border-right:0; }
+    .visit-essential:nth-child(-n+2){ border-bottom:1px solid rgba(212,160,23,.2); }
   }
   @media (max-width:620px){
     .temple-experience{ padding-left:18px; padding-right:18px; }
     .experience-copy h2{ font-size:clamp(2.5rem,13vw,3.75rem); }
     .experience-notes{ display:grid; gap:8px; }
     .temple-viewer{ min-height:560px; }
+    .temple-map-card,.temple-map{ min-height:560px; }
+    .visit-essentials-heading{ grid-template-columns:1fr; gap:18px; }
+    .visit-essentials-grid{ grid-template-columns:1fr; }
+    .visit-essential,
+    .visit-essential:nth-child(2){ min-height:0; border-right:0; border-bottom:1px solid rgba(212,160,23,.2); }
+    .visit-essential:last-child{ border-bottom:0; }
     .viewer-meta{ top:20px; left:19px; }
     .viewer-credit{ display:none; }
   }
