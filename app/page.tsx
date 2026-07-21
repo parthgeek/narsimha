@@ -59,6 +59,9 @@ function curateSanctumGallery(body: string) {
         .replace("<img ", '<img loading="lazy" '),
     );
 
+  originalFigures[2] =
+    `<figure class="reveal royal-frame-sm sanctum-photo" data-full="/5.png"><img src="/5.png" alt="Yoga Narasimha decorated with silver ornaments and garlands" loading="lazy">${galleryCornerMarkup}</figure>`;
+
   const addedFigures = sanctumGallerySlides
     .map(
       ({ src, alt }) =>
@@ -104,10 +107,16 @@ function addArchitectureExterior(body: string) {
     architectureCopyPattern,
     `<div class="reveal architecture-copy">
         <div class="architecture-text">$1</div>
-        <div class="art architecture-exterior royal-frame">
-          <img src="/outsidetemple.png" alt="Exterior view of the Yoga Narasimha Temple at Baggavalli">
-          ${galleryCornerMarkup}
-          <div class="frame-tag">Temple Exterior</div>
+        <div class="architecture-photo">
+          <div class="architecture-photo-heading">
+            <span class="kicker">Seen From The Road</span>
+            <h3>The Temple, As It Stands Today</h3>
+          </div>
+          <div class="art architecture-exterior royal-frame">
+            <img src="/outsidetemple.png" alt="Exterior view of the Yoga Narasimha Temple at Baggavalli">
+            ${galleryCornerMarkup}
+            <div class="frame-tag">Temple Exterior</div>
+          </div>
         </div>
       </div>`,
   );
@@ -121,47 +130,49 @@ function updateTopbarIcon(body: string) {
     )
     .replace(
       '<a href="#gallery">Gallery</a>',
-      '<a href="#gallery">Gallery</a><a href="#experience">Temple View</a>',
+      '<a href="#gallery">Gallery</a><a href="#experience">Temple Location</a>',
     );
 }
 
+function updateDeityImage(body: string) {
+  return body.replace(
+    /(<section id="deity">[\s\S]*?<div class="deity-star star-clip">\s*<img src=")[^"]+(" alt=")[^"]+("[^>]*>)/,
+    "$1/3.png$2Front view of Yoga Narasimha anointed with turmeric$3",
+  );
+}
+
 const templeExperienceMarkup = `
-<!-- ORIGINAL TEMPLE PHOTO EXPERIENCE -->
+<!-- TEMPLE LOCATION MAP -->
 <section id="experience" class="temple-experience">
   <div class="section-inner experience-grid">
     <div class="experience-copy reveal in">
-      <div class="kicker">Original Temple View</div>
-      <h2>See Baggavalli as it stands</h2>
-      <p class="lead">Explore a high-resolution photograph of the original Yoga Narasimha Temple—not an illustration or reconstructed model.</p>
-      <p>Move across the stonework, zoom into the stellate walls and tower, or open the image full screen. Use the Maps link for the live location and any visitor-uploaded 360° coverage available there.</p>
-      <div class="experience-notes" aria-label="Temple photo viewer instructions">
-        <span><b>Drag</b> to pan</span>
-        <span><b>Scroll</b> to zoom</span>
-        <span><b>Arrows</b> to move</span>
+      <div class="kicker">Temple Location</div>
+      <h2>Find your way to Baggavalli</h2>
+      <p class="lead">Sri Yoga Narasimha Swamy Temple is located in Baggavalli village, near Ajjampura in Karnataka.</p>
+      <p>Use the interactive map to inspect the surrounding roads, open the location in Google Maps, or begin navigation from your current location.</p>
+      <div class="experience-notes" aria-label="Temple location details">
+        <span><b>Village</b> Baggavalli</span>
+        <span><b>Taluk</b> Ajjampura</span>
+        <span><b>PIN</b> 577547</span>
       </div>
-      <a class="experience-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=Sri+Yoga+Narasimha+Swamy+Temple+Baggavalli+Ajjampura+Karnataka" target="_blank" rel="noopener noreferrer">Open the exact location <span aria-hidden="true">↗</span></a>
+      <a class="experience-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=Sri+Yoga+Narasimha+Swamy+Temple+Baggavalli+Ajjampura+Karnataka" target="_blank" rel="noopener noreferrer">Get directions in Google Maps <span aria-hidden="true">↗</span></a>
     </div>
 
-    <div class="temple-viewer reveal in" id="templeViewer">
-      <div class="viewer-meta">
-        <span class="viewer-eyebrow">Original photograph · 2014</span>
-        <strong>Sri Yoga Narasimha</strong>
-        <span>Baggavalli, Karnataka</span>
+    <div class="temple-map-card reveal in">
+      <div class="temple-map-heading">
+        <span class="map-pin" aria-hidden="true"></span>
+        <div>
+          <strong>Sri Yoga Narasimha Swamy Temple</strong>
+          <span>Baggavalli, Karnataka</span>
+        </div>
       </div>
-
-      <div class="temple-scene" id="templeScene" role="application" aria-label="Interactive original photograph of Yoga Narasimha Temple. Drag to pan, scroll to zoom, or use the arrow keys." tabindex="0">
-        <img class="temple-photo" id="templePhoto" src="/original-temple.jpg" alt="Original Yoga Narasimha Temple at Baggavalli, showing its carved Hoysala exterior and tower" draggable="false">
-      </div>
-
-      <div class="viewer-hint" id="viewerHint"><span></span> Drag to explore</div>
-      <div class="viewer-controls" aria-label="Temple photograph controls">
-        <button type="button" data-view-control="reset" aria-label="Reset temple view" title="Reset view">◇</button>
-        <span class="control-rule" aria-hidden="true"></span>
-        <button type="button" data-view-control="zoom-in" aria-label="Zoom in" title="Zoom in">+</button>
-        <button type="button" data-view-control="zoom-out" aria-label="Zoom out" title="Zoom out">−</button>
-        <button type="button" data-view-control="fullscreen" aria-label="View full screen" title="Full screen">⛶</button>
-      </div>
-      <div class="viewer-credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:Yoga_Narasimha_temple_at_Baggavalli.JPG" target="_blank" rel="noopener noreferrer">Dinesh Kannambadi · CC BY-SA 3.0</a></div>
+      <iframe
+        title="Google Map showing Sri Yoga Narasimha Swamy Temple in Baggavalli"
+        src="https://www.google.com/maps?q=Sri%20Yoga%20Narasimha%20Swamy%20Temple%2C%20Baggavalli%2C%20Ajjampura%2C%20Karnataka%20577547&amp;output=embed"
+        loading="lazy"
+        allowfullscreen
+        referrerpolicy="strict-origin-when-cross-origin">
+      </iframe>
     </div>
   </div>
 </section>`;
@@ -189,7 +200,7 @@ function getOriginalPageParts() {
     )
     .join("\n          ");
 
-  const bodyWithUpdatedTopbar = updateTopbarIcon(originalBody);
+  const bodyWithUpdatedTopbar = updateDeityImage(updateTopbarIcon(originalBody));
   const bodyWithUpdatedHero = bodyWithUpdatedTopbar.replace(
     /<div class="clip">[\s\S]*?<\/div>\s*(<i class="rf-corner tl">)/,
     `<div class="clip">\n          ${slidesMarkup}\n        </div>\n        $1`,
@@ -246,10 +257,25 @@ function getOriginalPageParts() {
     gap:38px;
     justify-content:space-between;
   }
+  .architecture-photo{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .architecture-photo-heading{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .architecture-photo-heading h3{
+    font-size:1.32rem;
+    color:var(--ivory);
+    letter-spacing:0.01em;
+  }
   .architecture-exterior{
     width:100%;
   }
-  .about-grid.reverse .architecture-exterior{
+  .about-grid.reverse .architecture-photo{
     order:0;
   }
   .architecture-exterior img{
@@ -259,6 +285,13 @@ function getOriginalPageParts() {
   }
   .architecture-text p:last-child{
     margin-bottom:0;
+  }
+  #deity .deity-star{
+    background:#0b0805;
+  }
+  #deity .deity-star img{
+    object-fit:contain;
+    object-position:center;
   }
   @media (min-width:881px){
     #deity .deity-wrap .star-frame{
