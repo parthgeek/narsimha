@@ -100,7 +100,7 @@ function buildGalleryMarkup() {
                 <video data-gallery-video src="${src}" muted playsinline preload="metadata" disablepictureinpicture></video>
               </div>
               <div class="gallery-video-copy">
-                <span class="kicker">Temple Film</span>
+                <span class="kicker">Temple Video</span>
                 <h3>${escapeHtml(title)}</h3>
                 <p>${escapeHtml(videoDescription(fileName))}</p>
               </div>
