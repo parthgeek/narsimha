@@ -10,6 +10,25 @@ export default function ClientEffects() {
     let current = 0;
     let intervalId: ReturnType<typeof setInterval> | undefined;
 
+    const forceMutedVideo = (video: HTMLVideoElement) => {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.volume = 0;
+      video.removeAttribute("controls");
+    };
+
+    const syncHeroVideoPlayback = () => {
+      slides.forEach((slide, index) => {
+        if (!(slide instanceof HTMLVideoElement)) return;
+        forceMutedVideo(slide);
+        if (index === current && slide.classList.contains("active")) {
+          void slide.play().catch(() => undefined);
+        } else {
+          slide.pause();
+        }
+      });
+    };
+
     const goTo = (index: number) => {
       if (!slides.length || !dotsWrap?.children.length) return;
       slides[current]?.classList.remove("active");
@@ -17,6 +36,7 @@ export default function ClientEffects() {
       current = index;
       slides[current]?.classList.add("active");
       dotsWrap.children[current]?.classList.add("active");
+      syncHeroVideoPlayback();
     };
 
     if (dotsWrap && slides.length) {
@@ -28,6 +48,7 @@ export default function ClientEffects() {
         dotsWrap.appendChild(button);
       });
       intervalId = setInterval(() => goTo((current + 1) % slides.length), 5200);
+      syncHeroVideoPlayback();
     }
 
     const navEl = document.getElementById("siteNav");
@@ -82,6 +103,98 @@ export default function ClientEffects() {
 
     lightboxClose?.addEventListener("click", closeLightbox);
     lightbox?.addEventListener("click", handleLightboxClick);
+
+    const galleryTabButtons = Array.from(
+      document.querySelectorAll<HTMLButtonElement>("[data-gallery-tab]"),
+    );
+    const galleryPanels = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-gallery-panel]"),
+    );
+    const videoPanel = document.querySelector<HTMLElement>('[data-gallery-panel="videos"]');
+    const videoViewport = document.querySelector<HTMLElement>("[data-gallery-video-viewport]");
+    const galleryVideos = Array.from(
+      document.querySelectorAll<HTMLVideoElement>("[data-gallery-video]"),
+    );
+    const prevVideoButton = document.querySelector<HTMLButtonElement>(
+      "[data-gallery-video-prev]",
+    );
+    const nextVideoButton = document.querySelector<HTMLButtonElement>(
+      "[data-gallery-video-next]",
+    );
+    let galleryVideoIndex = 0;
+
+    const isVideoPanelActive = () => videoPanel?.hidden === false;
+    const clampGalleryIndex = (value: number) =>
+      Math.min(Math.max(value, 0), Math.max(galleryVideos.length - 1, 0));
+
+    const updateGalleryVideoButtons = () => {
+      if (prevVideoButton) prevVideoButton.disabled = galleryVideoIndex <= 0;
+      if (nextVideoButton) {
+        nextVideoButton.disabled = galleryVideoIndex >= galleryVideos.length - 1;
+      }
+    };
+
+    const syncGalleryVideoPlayback = () => {
+      galleryVideos.forEach((video, index) => {
+        forceMutedVideo(video);
+        if (isVideoPanelActive() && index === galleryVideoIndex) {
+          void video.play().catch(() => undefined);
+        } else {
+          video.pause();
+        }
+      });
+    };
+
+    const scrollGalleryVideoTo = (
+      index: number,
+      behavior: ScrollBehavior = "smooth",
+    ) => {
+      galleryVideoIndex = clampGalleryIndex(index);
+      if (videoViewport) {
+        videoViewport.scrollTo({
+          left: galleryVideoIndex * videoViewport.clientWidth,
+          behavior,
+        });
+      }
+      updateGalleryVideoButtons();
+      syncGalleryVideoPlayback();
+    };
+
+    const setGalleryTab = (tabName: string) => {
+      galleryTabButtons.forEach((button) => {
+        const active = button.dataset.galleryTab === tabName;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+      });
+      galleryPanels.forEach((panel) => {
+        const active = panel.dataset.galleryPanel === tabName;
+        panel.hidden = !active;
+        panel.classList.toggle("active", active);
+      });
+
+      if (tabName === "videos") {
+        window.requestAnimationFrame(() => scrollGalleryVideoTo(galleryVideoIndex, "auto"));
+      } else {
+        syncGalleryVideoPlayback();
+      }
+    };
+
+    const galleryTabHandlers = galleryTabButtons.map((button) => {
+      const handler = () => setGalleryTab(button.dataset.galleryTab ?? "images");
+      button.addEventListener("click", handler);
+      return { button, handler };
+    });
+    const handlePrevVideo = () => scrollGalleryVideoTo(galleryVideoIndex - 1);
+    const handleNextVideo = () => scrollGalleryVideoTo(galleryVideoIndex + 1);
+    const handleVideoResize = () => {
+      if (isVideoPanelActive()) scrollGalleryVideoTo(galleryVideoIndex, "auto");
+    };
+
+    galleryVideos.forEach(forceMutedVideo);
+    updateGalleryVideoButtons();
+    prevVideoButton?.addEventListener("click", handlePrevVideo);
+    nextVideoButton?.addEventListener("click", handleNextVideo);
+    window.addEventListener("resize", handleVideoResize);
 
     const templeMapElement = document.getElementById("templeMap");
     let templeMap: LeafletMap | undefined;
@@ -332,6 +445,16 @@ export default function ClientEffects() {
       });
       lightboxClose?.removeEventListener("click", closeLightbox);
       lightbox?.removeEventListener("click", handleLightboxClick);
+      galleryTabHandlers.forEach(({ button, handler }) => {
+        button.removeEventListener("click", handler);
+      });
+      prevVideoButton?.removeEventListener("click", handlePrevVideo);
+      nextVideoButton?.removeEventListener("click", handleNextVideo);
+      window.removeEventListener("resize", handleVideoResize);
+      galleryVideos.forEach((video) => video.pause());
+      slides.forEach((slide) => {
+        if (slide instanceof HTMLVideoElement) slide.pause();
+      });
       templeMap?.remove();
       templeScene?.removeEventListener("pointerdown", handlePointerDown);
       templeScene?.removeEventListener("pointermove", handlePointerMove);

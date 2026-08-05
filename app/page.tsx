@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import ChantPlayer from "./chant-player";
 import ClientEffects from "./client-effects";
@@ -26,52 +26,127 @@ const heroSlides = [
   },
 ];
 
-const sanctumGallerySlides = heroSlides.slice(0, 3);
 const galleryCornerMarkup =
   '<i class="rf-corner tl"></i><i class="rf-corner tr"></i><i class="rf-corner bl"></i><i class="rf-corner br"></i>';
 
-function curateSanctumGallery(body: string) {
-  const sectionStart = body.indexOf("<!-- GALLERY -->");
-  const galleryStart = body.indexOf('<div class="gallery-grid">', sectionStart);
+const imageExtensions = new Set([".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"]);
+const videoExtensions = new Set([".mp4", ".m4v", ".mov", ".webm"]);
 
-  if (sectionStart === -1 || galleryStart === -1) return body;
+function mediaSrc(fileName: string) {
+  return `/media/${encodeURIComponent(fileName)}`;
+}
 
-  const galleryContentStart = body.indexOf(">", galleryStart) + 1;
-  const galleryEnd = body.indexOf("</div>", galleryContentStart);
-  if (galleryEnd === -1) return body;
+function humanizeFileName(fileName: string) {
+  return path
+    .basename(fileName, path.extname(fileName))
+    .replace(/^WhatsApp Image\s*/i, "")
+    .replace(/\s+at\s+/i, " ")
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
 
-  const galleryContent = body.slice(galleryContentStart, galleryEnd);
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
 
-  const originalFigures = Array.from(
-    galleryContent.matchAll(/<figure[\s\S]*?<\/figure>/g),
-    (match) => match[0],
-  )
-    .filter((_figure, index) => index !== 1 && index !== 2)
-    .map((figure) =>
-      figure
-        .replace(/class="([^"]*)"/, (_match, classNames: string) => {
-          const classes = classNames
-            .split(/\s+/)
-            .filter((className) => className !== "tall" && className !== "wide");
-          if (!classes.includes("sanctum-photo")) classes.push("sanctum-photo");
-          return `class="${classes.join(" ")}"`;
-        })
-        .replace("<img ", '<img loading="lazy" '),
-    );
+function getMediaFiles(extensions: Set<string>) {
+  const mediaDir = path.join(process.cwd(), "public", "media");
+  return readdirSync(mediaDir, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && extensions.has(path.extname(entry.name).toLowerCase()))
+    .map((entry) => ({
+      fileName: entry.name,
+      src: mediaSrc(entry.name),
+      title: humanizeFileName(entry.name),
+    }))
+    .sort((a, b) => a.fileName.localeCompare(b.fileName));
+}
 
-  originalFigures[2] =
-    `<figure class="reveal royal-frame-sm sanctum-photo" data-full="/5.png"><img src="/5.png" alt="Yoga Narasimha decorated with silver ornaments and garlands" loading="lazy">${galleryCornerMarkup}</figure>`;
+function videoDescription(fileName: string) {
+  if (fileName === "idol-video.mp4") {
+    return "Close darshan of Sri Yoga Narasimha in the sanctum, centered on the adorned idol and ritual presence.";
+  }
+  if (fileName === "temple-interior.mp4") {
+    return "A quiet interior view of the shrine space, showing the stone chamber and approach to the sanctum.";
+  }
+  if (fileName === "temple-long.mp4") {
+    return "A longer view of the temple setting and shrine approach, preserved in the full frame.";
+  }
+  if (fileName === "temple-wide.mp4") {
+    return "A wide view of the temple environment, showing the building and surrounding approach together.";
+  }
+  return "A recorded view from Sri Yoga Narasimha Swamy Temple at Baggavalli.";
+}
 
-  const addedFigures = sanctumGallerySlides
+function buildGalleryMarkup() {
+  const imageFiles = getMediaFiles(imageExtensions);
+  const videoFiles = getMediaFiles(videoExtensions);
+  const imageFigures = imageFiles
     .map(
-      ({ src, alt }) =>
-        `<figure class="reveal royal-frame-sm sanctum-photo" data-full="${src}"><img src="${src}" alt="${alt}" loading="lazy">${galleryCornerMarkup}</figure>`,
-    );
-  const galleryFigures = [...originalFigures, ...addedFigures].join("\n      ");
+      ({ src, title }) =>
+        `<figure class="reveal royal-frame-sm sanctum-photo" data-full="${src}"><img src="${src}" alt="${escapeHtml(title)}" loading="lazy">${galleryCornerMarkup}</figure>`,
+    )
+    .join("\n          ");
+  const videoSlides = videoFiles
+    .map(
+      ({ src, title, fileName }, index) => `
+            <article class="gallery-video-slide" data-gallery-video-slide="${index}" aria-label="${escapeHtml(title)}">
+              <div class="gallery-video-frame">
+                <video data-gallery-video src="${src}" muted playsinline preload="metadata" disablepictureinpicture></video>
+              </div>
+              <div class="gallery-video-copy">
+                <span class="kicker">Temple Film</span>
+                <h3>${escapeHtml(title)}</h3>
+                <p>${escapeHtml(videoDescription(fileName))}</p>
+              </div>
+            </article>`,
+    )
+    .join("");
 
-  return `${body.slice(0, galleryStart)}<div class="gallery-grid sanctum-gallery">
-      ${galleryFigures}
-    </div>${body.slice(galleryEnd + "</div>".length)}`;
+  return `<!-- GALLERY -->
+<section id="gallery" class="media-gallery-section" style="background:var(--stone);">
+  <div class="section-inner">
+    <div style="text-align:center; margin-bottom:34px;" class="reveal">
+      <div class="divider"><span class="rule"></span><span class="diamond"></span><span class="rule"></span></div>
+      <div class="kicker">Temple Gallery</div>
+      <h2 style="font-size:2.1rem; margin-top:14px;">Images and Videos</h2>
+    </div>
+
+    <div class="gallery-tabs reveal" role="tablist" aria-label="Temple gallery media">
+      <button class="gallery-tab active" type="button" role="tab" aria-selected="true" aria-controls="galleryImagesPanel" id="galleryImagesTab" data-gallery-tab="images">Images</button>
+      <button class="gallery-tab" type="button" role="tab" aria-selected="false" aria-controls="galleryVideosPanel" id="galleryVideosTab" data-gallery-tab="videos">Videos</button>
+    </div>
+
+    <div class="gallery-tab-panels">
+      <div class="gallery-panel active" id="galleryImagesPanel" role="tabpanel" aria-labelledby="galleryImagesTab" data-gallery-panel="images">
+        <div class="gallery-grid sanctum-gallery media-image-grid">
+          ${imageFigures}
+        </div>
+      </div>
+
+      <div class="gallery-panel" id="galleryVideosPanel" role="tabpanel" aria-labelledby="galleryVideosTab" data-gallery-panel="videos" hidden>
+        <div class="gallery-video-shell" data-gallery-video-carousel>
+          <button class="gallery-video-arrow gallery-video-prev" type="button" aria-label="Previous gallery video" data-gallery-video-prev>‹</button>
+          <div class="gallery-video-viewport" data-gallery-video-viewport>
+            <div class="gallery-video-track" data-gallery-video-track>
+${videoSlides}
+            </div>
+          </div>
+          <button class="gallery-video-arrow gallery-video-next" type="button" aria-label="Next gallery video" data-gallery-video-next>›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>`;
+}
+
+function replaceGallery(body: string) {
+  return body.replace(/<!-- GALLERY -->[\s\S]*?<!-- VISIT -->/, `${buildGalleryMarkup()}\n\n<!-- VISIT -->`);
 }
 
 function removeArchitectureGallery(body: string) {
@@ -209,6 +284,10 @@ function getOriginalPageParts() {
       ({ src, alt }, index) =>
         `<img class="hero-slide-img crop-from-bottom${index === 0 ? " active" : ""}" src="${src}" alt="${alt}"${index === 0 ? ' fetchpriority="high"' : ' loading="lazy"'}>`,
     )
+    .concat([
+      `<video class="hero-slide-img hero-slide-video" src="/media/idol-video.mp4" muted playsinline loop preload="metadata" aria-label="Close darshan video of Sri Yoga Narasimha"></video>`,
+      `<video class="hero-slide-img hero-slide-video" src="/media/temple-long.mp4" muted playsinline loop preload="metadata" aria-label="Long temple view video"></video>`,
+    ])
     .join("\n          ");
 
   const bodyWithUpdatedTopbar = updateDeityImage(updateTopbarIcon(originalBody));
@@ -217,7 +296,7 @@ function getOriginalPageParts() {
     `<div class="clip">\n          ${slidesMarkup}\n        </div>\n        $1`,
   );
   const body = addTempleExperience(
-    curateSanctumGallery(
+    replaceGallery(
       addArchitectureExterior(removeArchitectureGallery(bodyWithUpdatedHero)),
     ),
   );
@@ -258,6 +337,134 @@ function getOriginalPageParts() {
     aspect-ratio:593 / 1180;
     object-fit:cover;
     object-position:center top;
+  }
+  .hero-slide-video{
+    background:#0b0805;
+  }
+  .gallery-tabs{
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    margin:0 auto 32px;
+  }
+  .gallery-tab{
+    min-width:112px;
+    border:1px solid rgba(212,160,23,.34);
+    background:rgba(16,11,7,.74);
+    color:var(--taupe);
+    padding:11px 20px;
+    font:600 .72rem/1 'Barlow',sans-serif;
+    letter-spacing:.13em;
+    text-transform:uppercase;
+    cursor:pointer;
+    transition:background .22s ease,color .22s ease,border-color .22s ease;
+  }
+  .gallery-tab:hover,
+  .gallery-tab.active{
+    border-color:var(--gold);
+    background:rgba(212,160,23,.14);
+    color:var(--gold-bright);
+  }
+  .gallery-tab:focus-visible,
+  .gallery-video-arrow:focus-visible{
+    outline:2px solid var(--gold-bright);
+    outline-offset:4px;
+  }
+  .gallery-panel[hidden]{ display:none; }
+  .media-image-grid{
+    margin-top:0;
+  }
+  .gallery-video-shell{
+    position:relative;
+    display:grid;
+    grid-template-columns:48px minmax(0, 840px) 48px;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    max-width:980px;
+    margin:0 auto;
+  }
+  .gallery-video-viewport{
+    width:100%;
+    max-width:840px;
+    overflow:hidden;
+    scroll-behavior:smooth;
+  }
+  .gallery-video-track{
+    display:flex;
+    width:100%;
+  }
+  .gallery-video-slide{
+    flex:0 0 100%;
+    width:100%;
+    display:grid;
+    grid-template-columns:minmax(0, 1.28fr) minmax(220px, .72fr);
+    gap:18px;
+    align-items:stretch;
+  }
+  .gallery-video-frame{
+    position:relative;
+    overflow:hidden;
+    aspect-ratio:16 / 9;
+    border:1px solid rgba(212,160,23,.3);
+    background:#0b0805;
+    box-shadow:0 24px 60px rgba(5,3,2,.36);
+  }
+  .gallery-video-frame video{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    background:#0b0805;
+    pointer-events:none;
+  }
+  .gallery-video-copy{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-height:0;
+    padding:20px 18px;
+    border:1px solid var(--stone-line);
+    background:var(--stone-raised);
+  }
+  .gallery-video-copy h3{
+    margin:8px 0 10px;
+    color:var(--ivory);
+    font-family:'Cinzel',serif;
+    font-size:clamp(1rem,1.4vw,1.22rem);
+    font-weight:500;
+    letter-spacing:.01em;
+    line-height:1.25;
+  }
+  .gallery-video-copy p{
+    margin:0;
+    color:var(--taupe);
+    font-size:.9rem;
+    line-height:1.65;
+  }
+  .gallery-video-arrow{
+    width:48px;
+    height:48px;
+    border:1px solid rgba(212,160,23,.34);
+    border-radius:50%;
+    background:rgba(16,11,7,.82);
+    color:var(--gold-bright);
+    font:400 2rem/1 'Cormorant Garamond',serif;
+    cursor:pointer;
+    transition:background .22s ease,color .22s ease,opacity .22s ease,transform .12s ease;
+  }
+  .gallery-video-arrow:hover{
+    background:rgba(212,160,23,.16);
+    color:var(--ivory);
+  }
+  .gallery-video-arrow:active{ transform:scale(.96); }
+  .gallery-video-arrow:disabled{
+    opacity:.35;
+    cursor:default;
+  }
+  .gallery-video-arrow:disabled:hover{
+    background:rgba(16,11,7,.82);
+    color:var(--gold-bright);
   }
   .about-grid.reverse{
     align-items:stretch;
@@ -312,9 +519,40 @@ function getOriginalPageParts() {
   @media (max-width:1100px){
     .gallery-grid.sanctum-gallery{ grid-template-columns:repeat(2,minmax(0,1fr)); }
   }
+  @media (max-width:880px){
+    .gallery-video-shell{
+      grid-template-columns:42px minmax(0, 1fr) 42px;
+      gap:10px;
+    }
+    .gallery-video-slide{
+      grid-template-columns:1fr;
+      gap:12px;
+    }
+    .gallery-video-copy{
+      padding:17px 16px;
+    }
+  }
   @media (max-width:520px){
     .gallery-grid.sanctum-gallery{
       grid-template-columns:1fr;
+    }
+    .gallery-tabs{
+      align-items:stretch;
+    }
+    .gallery-tab{
+      flex:1;
+      min-width:0;
+      padding-inline:12px;
+    }
+    .gallery-video-shell{
+      grid-template-columns:36px minmax(0, 1fr) 36px;
+      gap:7px;
+    }
+    .gallery-video-arrow{
+      width:36px;
+      height:42px;
+      border-radius:2px;
+      font-size:1.55rem;
     }
   }
 
