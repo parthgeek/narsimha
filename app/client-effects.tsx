@@ -412,7 +412,7 @@ export default function ClientEffects() {
           if (status) {
             status.textContent =
               (error instanceof Error && error.message) ||
-              "Something went wrong. Please call +91 99647 62267 or email yoganarasimhabaggavalli@gmail.com.";
+              "Something went wrong. Please call +91 99720 37907 or email yoganarasimhabaggavalli@gmail.com.";
             status.className = "seva-status show err";
           }
         } finally {

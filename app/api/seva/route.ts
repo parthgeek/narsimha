@@ -19,8 +19,7 @@ type SmtpError = Error & {
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const phonePattern = /^[0-9+\s\-()]{7,17}$/;
 const templeAddress = "yoganarasimhabaggavalli@gmail.com";
-const templePhone = "+91 99647 62267";
-const archakaPhone = "+91 63625 97022";
+const contactPhone = "+91 99720 37907";
 const mapsUrl =
   "https://www.google.com/maps/search/?api=1&query=Sri+Yoga+Narasimha+Swamy+Temple+Baggavalli+Ajjampura+Karnataka";
 
@@ -217,8 +216,7 @@ export async function POST(request: Request) {
         "Sri Yoga Narasimha Swamy Temple, Baggavalli",
         "",
         `Official email: ${templeAddress}`,
-        `Contact: ${templePhone}`,
-        `Archaka: ${archakaPhone}`,
+        `Contact: ${contactPhone}`,
         "Location: Baggavalli, about 3 km from Ajjampura",
         `Google Maps: ${mapsUrl}`,
       ].join("\n"),
@@ -231,8 +229,7 @@ export async function POST(request: Request) {
           <p style="margin:4px 0 12px"><strong>Sri Yoga Narasimha Swamy Temple, Baggavalli</strong></p>
           <p style="margin:0">
             <strong>Official email:</strong> <a href="mailto:${templeAddress}" style="color:#7A2418">${templeAddress}</a><br>
-            <strong>Contact:</strong> <a href="tel:+919964762267" style="color:#7A2418">${templePhone}</a><br>
-            <strong>Archaka:</strong> <a href="tel:+916362597022" style="color:#7A2418">${archakaPhone}</a><br>
+            <strong>Contact:</strong> <a href="tel:+919972037907" style="color:#7A2418">${contactPhone}</a><br>
             <strong>Location:</strong> Baggavalli, about 3 km from Ajjampura<br>
             <a href="${mapsUrl}" style="color:#7A2418">Find the temple on Google Maps</a>
           </p>
