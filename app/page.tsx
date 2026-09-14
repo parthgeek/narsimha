@@ -2,7 +2,6 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import ChantPlayer from "./chant-player";
 import ClientEffects from "./client-effects";
-import FestivalVideoOverlay from "./festival-video-overlay";
 
 const heroSlides = [
   {
@@ -327,108 +326,6 @@ function getOriginalPageParts() {
     align-items:start;
   }
 
-  /* ---------- Gowri Ganesh festival video ---------- */
-  body.has-festival-video-overlay{ overflow:hidden; }
-  .festival-video-overlay{
-    position:fixed;
-    inset:0;
-    z-index:1200;
-    display:grid;
-    place-items:center;
-    padding:clamp(14px,4vw,42px);
-    isolation:isolate;
-  }
-  .festival-video-backdrop{
-    position:absolute;
-    inset:0;
-    z-index:-1;
-    border:0;
-    background:rgba(8,5,3,.86);
-    backdrop-filter:blur(5px);
-    cursor:pointer;
-    animation:festival-overlay-fade .28s ease forwards;
-  }
-  .festival-video-panel{
-    position:relative;
-    display:flex;
-    width:fit-content;
-    max-width:calc(100vw - 28px);
-    max-height:min(88dvh,860px);
-    overflow:hidden;
-    border:1px solid rgba(212,160,23,.48);
-    border-radius:8px;
-    background:#0b0805;
-    box-shadow:0 34px 100px rgba(0,0,0,.72),0 0 0 1px rgba(255,238,185,.06) inset;
-    transform-origin:center;
-    animation:festival-overlay-enter .4s cubic-bezier(.16,1,.3,1) forwards;
-  }
-  .festival-video-media{
-    display:block;
-    width:auto;
-    height:auto;
-    max-width:calc(100vw - 28px);
-    max-height:min(88dvh,860px);
-    object-fit:contain;
-    background:#0b0805;
-  }
-  .festival-video-label{
-    position:absolute;
-    top:14px;
-    left:14px;
-    z-index:2;
-    max-width:calc(100% - 88px);
-    padding:9px 12px 10px;
-    border:1px solid rgba(212,160,23,.32);
-    border-radius:3px;
-    background:rgba(11,8,5,.76);
-    color:var(--ivory);
-    font:500 clamp(.7rem,1.5vw,.83rem)/1.2 'Cinzel',serif;
-    letter-spacing:.05em;
-    backdrop-filter:blur(8px);
-  }
-  .festival-video-label span{
-    display:block;
-    margin-bottom:4px;
-    color:var(--gold-bright);
-    font:600 .58rem/1 'Barlow',sans-serif;
-    letter-spacing:.18em;
-    text-transform:uppercase;
-  }
-  .festival-video-close{
-    position:absolute;
-    top:14px;
-    right:14px;
-    z-index:3;
-    display:grid;
-    width:38px;
-    height:38px;
-    place-items:center;
-    padding:0;
-    border:1px solid rgba(212,160,23,.52);
-    border-radius:3px;
-    background:rgba(11,8,5,.82);
-    color:var(--ivory);
-    font:400 1.55rem/1 'Barlow',sans-serif;
-    cursor:pointer;
-    backdrop-filter:blur(8px);
-    transition:background .2s ease,color .2s ease,transform .15s ease;
-  }
-  .festival-video-close:hover,
-  .festival-video-close:focus-visible{
-    background:var(--gold);
-    color:#0b0805;
-    outline:none;
-  }
-  .festival-video-close:focus-visible{ box-shadow:0 0 0 3px rgba(255,238,185,.42); }
-  .festival-video-close:active{ transform:scale(.96); }
-  @keyframes festival-overlay-fade{
-    from{ opacity:0; }
-    to{ opacity:1; }
-  }
-  @keyframes festival-overlay-enter{
-    from{ opacity:0; transform:translateY(18px) scale(.975); }
-    to{ opacity:1; transform:translateY(0) scale(1); }
-  }
   .gallery-grid.sanctum-gallery figure{
     aspect-ratio:3 / 4;
     background:#0b0805;
@@ -664,19 +561,6 @@ function getOriginalPageParts() {
       border-radius:2px;
       font-size:1.55rem;
     }
-    .festival-video-overlay{ padding:10px; }
-    .festival-video-panel,
-    .festival-video-media{
-      max-width:calc(100vw - 20px);
-      max-height:90dvh;
-    }
-    .festival-video-label{ top:10px; left:10px; }
-    .festival-video-close{ top:10px; right:10px; }
-  }
-
-  @media (prefers-reduced-motion:reduce){
-    .festival-video-backdrop,
-    .festival-video-panel{ animation:none; }
   }
 
   /* ---------- Interactive temple study ---------- */
@@ -1055,7 +939,6 @@ export default function Home() {
       <main dangerouslySetInnerHTML={{ __html: body }} />
       <ChantPlayer />
       <ClientEffects />
-      <FestivalVideoOverlay />
     </>
   );
 }
