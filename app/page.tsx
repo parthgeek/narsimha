@@ -32,6 +32,74 @@ const galleryCornerMarkup =
 const imageExtensions = new Set([".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"]);
 const videoExtensions = new Set([".mp4", ".m4v", ".mov", ".webm"]);
 
+// Wide exterior and grounds photographs, shown in their own gallery tab.
+const templeViews = [
+  {
+    fileName: "temple-night-illuminated.jpg",
+    title: "The Temple After Dark",
+    caption: "The mandapa and vimana lit against the night sky.",
+  },
+  {
+    fileName: "temple-front-elevation.jpg",
+    title: "Front Elevation",
+    caption: "The eastern approach, dhwajasthambha and open mandapa.",
+  },
+  {
+    fileName: "temple-aerial-northeast.jpg",
+    title: "From The North-East",
+    caption: "The full plan of shrine, mandapa and plinth from above.",
+  },
+  {
+    fileName: "temple-aerial-southwest.jpg",
+    title: "From The South-West",
+    caption: "The stepped vimana over the sanctum, seen across the plinth.",
+  },
+  {
+    fileName: "temple-vimana-tower.jpg",
+    title: "The Vimana",
+    caption: "The tiered tower rising above the garbhagriha.",
+  },
+  {
+    fileName: "temple-aerial-rear-vimana.jpg",
+    title: "Along The Shrine Axis",
+    caption: "The sanctum tower and mandapa roof on a single axis.",
+  },
+  {
+    fileName: "temple-aerial-front-axis.jpg",
+    title: "The Processional Path",
+    caption: "The paved approach leading to the mandapa steps.",
+  },
+  {
+    fileName: "temple-aerial-coconut-groves.jpg",
+    title: "Among The Groves",
+    caption: "The temple compound ringed by coconut and areca plantations.",
+  },
+  {
+    fileName: "temple-overhead-plan.jpg",
+    title: "Directly Overhead",
+    caption: "The cruciform plan of the temple read from straight above.",
+  },
+  {
+    fileName: "temple-in-farmland.jpg",
+    title: "In The Fields",
+    caption: "The shrine set within the farmland of Baggavalli village.",
+  },
+  {
+    fileName: "mandapa-interior-colonnade.jpg",
+    title: "Inside The Mandapa",
+    caption: "Lathe-turned stone pillars framing the way to the sanctum.",
+  },
+  {
+    fileName: "mandapa-dhwajasthambha-view.jpg",
+    title: "Looking Out",
+    caption: "The dhwajasthambha seen from within the pillared hall.",
+  },
+];
+
+function templeViewSrc(fileName: string) {
+  return `/media/temple/${fileName}`;
+}
+
 function mediaSrc(fileName: string) {
   return `/media/${encodeURIComponent(fileName)}`;
 }
@@ -89,6 +157,15 @@ function videoDescription(fileName: string) {
   return "A recorded view from Sri Yoga Narasimha Swamy Temple at Baggavalli.";
 }
 
+function buildTempleViewMarkup() {
+  return templeViews
+    .map(({ fileName, title, caption }) => {
+      const src = templeViewSrc(fileName);
+      return `<figure class="reveal royal-frame-sm temple-view" data-full="${src}"><img src="${src}" alt="${escapeHtml(title)} — Sri Yoga Narasimha Swamy Temple, Baggavalli" loading="lazy">${galleryCornerMarkup}<figcaption><span class="temple-view-title">${escapeHtml(title)}</span><span class="temple-view-caption">${escapeHtml(caption)}</span></figcaption></figure>`;
+    })
+    .join("\n          ");
+}
+
 function buildGalleryMarkup() {
   const imageFiles = getMediaFiles(imageExtensions);
   const videoFiles = getMediaFiles(videoExtensions);
@@ -125,6 +202,7 @@ function buildGalleryMarkup() {
 
     <div class="gallery-tabs reveal" role="tablist" aria-label="Temple gallery media">
       <button class="gallery-tab active" type="button" role="tab" aria-selected="true" aria-controls="galleryImagesPanel" id="galleryImagesTab" data-gallery-tab="images">Images</button>
+      <button class="gallery-tab" type="button" role="tab" aria-selected="false" aria-controls="galleryTemplePanel" id="galleryTempleTab" data-gallery-tab="temple">Temple &amp; Grounds</button>
       <button class="gallery-tab" type="button" role="tab" aria-selected="false" aria-controls="galleryVideosPanel" id="galleryVideosTab" data-gallery-tab="videos">Videos</button>
     </div>
 
@@ -132,6 +210,12 @@ function buildGalleryMarkup() {
       <div class="gallery-panel active" id="galleryImagesPanel" role="tabpanel" aria-labelledby="galleryImagesTab" data-gallery-panel="images">
         <div class="gallery-grid sanctum-gallery media-image-grid">
           ${imageFigures}
+        </div>
+      </div>
+
+      <div class="gallery-panel" id="galleryTemplePanel" role="tabpanel" aria-labelledby="galleryTempleTab" data-gallery-panel="temple" hidden>
+        <div class="gallery-grid temple-view-grid">
+          ${buildTempleViewMarkup()}
         </div>
       </div>
 
@@ -194,7 +278,7 @@ function addArchitectureExterior(body: string) {
             <h3>The Temple, As It Stands Today</h3>
           </div>
           <div class="art architecture-exterior royal-frame">
-            <img src="/outsidetemple.png" alt="Exterior view of the Yoga Narasimha Temple at Baggavalli">
+            <img src="/media/temple/temple-front-elevation.jpg" alt="Front elevation of the Yoga Narasimha Temple at Baggavalli, with the dhwajasthambha on the processional axis">
             ${galleryCornerMarkup}
             <div class="frame-tag">Temple Exterior</div>
           </div>
@@ -246,6 +330,12 @@ const templeExperienceMarkup = `
         <div id="templeMap" class="temple-map" role="application" aria-label="Interactive map showing Sri Yoga Narasimha Swamy Temple in Baggavalli"></div>
       </div>
     </div>
+
+    <figure class="experience-banner reveal royal-frame" data-full="/media/temple/temple-night-illuminated.jpg">
+      <img src="/media/temple/temple-night-illuminated.jpg" alt="The Yoga Narasimha Temple lit up after dark, seen from the open grounds" loading="lazy">
+      <i class="rf-corner tl"></i><i class="rf-corner tr"></i><i class="rf-corner bl"></i><i class="rf-corner br"></i>
+      <figcaption>Evening lamps on the mandapa, seen from the temple grounds.</figcaption>
+    </figure>
 
     <div class="visit-essentials reveal">
       <div class="visit-essentials-heading">
@@ -338,6 +428,77 @@ function getOriginalPageParts() {
   .gallery-grid.sanctum-gallery figure:hover img{
     transform:none;
     filter:saturate(1) brightness(1);
+  }
+  .gallery-grid.temple-view-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:20px;
+    margin-top:0;
+    align-items:start;
+  }
+  .temple-view{
+    position:relative;
+    background:#0b0805;
+    cursor:zoom-in;
+  }
+  .temple-view img{
+    display:block;
+    width:100%;
+    aspect-ratio:16 / 9;
+    object-fit:cover;
+    object-position:center;
+    filter:saturate(0.96) brightness(0.94);
+    transition:filter .3s ease,transform .4s ease;
+  }
+  .temple-view:hover img{
+    filter:saturate(1.04) brightness(1.02);
+    transform:scale(1.015);
+  }
+  .temple-view figcaption{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    padding:14px 16px 16px;
+    border-top:1px solid var(--stone-line);
+    background:var(--stone-raised);
+  }
+  .temple-view-title{
+    font:500 .95rem/1.25 'Cinzel',serif;
+    color:var(--ivory);
+    letter-spacing:.01em;
+  }
+  .temple-view-caption{
+    font-size:.82rem;
+    line-height:1.6;
+    color:var(--taupe);
+  }
+  .experience-banner{
+    position:relative;
+    margin:46px 0 0;
+    background:#0b0805;
+    cursor:zoom-in;
+  }
+  .experience-banner img{
+    display:block;
+    width:100%;
+    aspect-ratio:21 / 9;
+    object-fit:cover;
+    object-position:center 58%;
+  }
+  .experience-banner figcaption{
+    padding:13px 18px;
+    border-top:1px solid var(--stone-line);
+    background:var(--stone-raised);
+    color:var(--taupe);
+    font-size:.82rem;
+    letter-spacing:.02em;
+  }
+  @media (max-width:1100px){
+    .gallery-grid.temple-view-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+  @media (max-width:680px){
+    .gallery-grid.temple-view-grid{ grid-template-columns:1fr; }
+    .experience-banner img{ aspect-ratio:16 / 10; }
   }
   .lightbox img.crop-from-bottom{
     width:min(90vw, calc(90vh * 0.5025));
