@@ -3,26 +3,51 @@ import path from "node:path";
 import ChantPlayer from "./chant-player";
 import ClientEffects from "./client-effects";
 
+// Wide-format slides for the hero carousel. Portrait sources are kept out of
+// this set — the frame is landscape, so anything taller than it crops badly.
 const heroSlides = [
   {
-    src: "/1.png",
-    alt: "Yoga Narasimha anointed with turmeric, viewed from the left",
+    src: "/media/temple/temple-night-illuminated.jpg",
+    alt: "The Yoga Narasimha Temple lit against the night sky",
+    caption: "The Temple · After Dark",
+    objectPosition: "center 52%",
   },
   {
-    src: "/2.png",
-    alt: "Yoga Narasimha anointed with turmeric, seated in the sanctum",
+    src: "/media/temple/temple-front-elevation.jpg",
+    alt: "Front elevation of the temple with the dhwajasthambha on the processional axis",
+    caption: "Eastern Approach · Baggavalli",
+    objectPosition: "center 46%",
   },
   {
-    src: "/3.png",
-    alt: "Front view of Yoga Narasimha anointed with turmeric",
+    src: "/media/temple/temple-aerial-northeast.jpg",
+    alt: "Aerial view of the temple from the north-east, showing shrine, mandapa and plinth",
+    caption: "The Full Plan · From Above",
+    objectPosition: "center 50%",
   },
   {
-    src: "/4.png",
-    alt: "Yoga Narasimha anointed with turmeric, viewed from the right",
+    src: "/media/temple/temple-vimana-tower.jpg",
+    alt: "The tiered vimana rising above the sanctum",
+    caption: "The Vimana · Over The Sanctum",
+    objectPosition: "center 44%",
   },
   {
-    src: "/5.png",
-    alt: "Yoga Narasimha decorated with silver ornaments and garlands",
+    src: "/media/temple/mandapa-interior-colonnade.jpg",
+    alt: "Lathe-turned stone pillars inside the mandapa, facing the sanctum",
+    caption: "Inside The Mandapa",
+    objectPosition: "center 50%",
+  },
+  {
+    src: "/media/temple/temple-aerial-coconut-groves.jpg",
+    alt: "The temple compound ringed by coconut and areca plantations",
+    caption: "Among The Groves",
+    objectPosition: "center 50%",
+  },
+  {
+    src: "/media/temple-wide.mp4",
+    alt: "Wide moving view of the temple and its surrounding grounds",
+    caption: "Temple Grounds · In Motion",
+    objectPosition: "center 50%",
+    video: true,
   },
 ];
 
@@ -376,21 +401,33 @@ function getOriginalPageParts() {
   }
 
   const slidesMarkup = heroSlides
-    .map(
-      ({ src, alt }, index) =>
-        `<img class="hero-slide-img crop-from-bottom${index === 0 ? " active" : ""}" src="${src}" alt="${alt}"${index === 0 ? ' fetchpriority="high"' : ' loading="lazy"'}>`,
-    )
-    .concat([
-      `<video class="hero-slide-img hero-slide-video" src="/media/idol-video.mp4" muted playsinline loop preload="metadata" aria-label="Close darshan video of Sri Yoga Narasimha"></video>`,
-      `<video class="hero-slide-img hero-slide-video" src="/media/temple-long.mp4" muted playsinline loop preload="metadata" aria-label="Long temple view video"></video>`,
-    ])
-    .join("\n          ");
+    .map(({ src, alt, caption, objectPosition, video }, index) => {
+      const media = video
+        ? `<video class="hero-slide-media hero-slide-video" src="${src}" style="object-position:${objectPosition}" muted playsinline loop preload="metadata" disablepictureinpicture aria-label="${escapeHtml(alt)}"></video>`
+        : `<img class="hero-slide-media" src="${src}" alt="${escapeHtml(alt)}" style="object-position:${objectPosition}"${index === 0 ? ' fetchpriority="high"' : ' loading="lazy"'}>`;
+
+      return `<div class="hero-slide${index === 0 ? " active" : ""}" data-hero-slide="${index}" data-hero-caption-text="${escapeHtml(caption)}" role="group" aria-roledescription="slide" aria-label="${index + 1} of ${heroSlides.length}"${index === 0 ? "" : ' aria-hidden="true"'}>${media}</div>`;
+    })
+    .join("\n            ");
+
+  const heroCarouselMarkup = `<div class="clip" data-hero-carousel aria-roledescription="carousel" aria-label="Views of Sri Yoga Narasimha Swamy Temple">
+          <div class="hero-track" data-hero-track>
+            ${slidesMarkup}
+          </div>
+        </div>
+        <button class="hero-arrow hero-arrow-prev" type="button" data-hero-prev aria-label="Previous photograph">‹</button>
+        <button class="hero-arrow hero-arrow-next" type="button" data-hero-next aria-label="Next photograph">›</button>`;
 
   const bodyWithUpdatedTopbar = updateDeityImage(updateTopbarIcon(originalBody));
-  const bodyWithUpdatedHero = bodyWithUpdatedTopbar.replace(
-    /<div class="clip">[\s\S]*?<\/div>\s*(<i class="rf-corner tl">)/,
-    `<div class="clip">\n          ${slidesMarkup}\n        </div>\n        $1`,
-  );
+  const bodyWithUpdatedHero = bodyWithUpdatedTopbar
+    .replace(
+      /<div class="portrait-caption">[^<]*<\/div>/,
+      `<div class="portrait-caption" data-hero-caption>${escapeHtml(heroSlides[0].caption)}</div>`,
+    )
+    .replace(
+      /<div class="clip">[\s\S]*?<\/div>\s*(<i class="rf-corner tl">)/,
+      `${heroCarouselMarkup}\n        $1`,
+    );
   const body = addTempleExperience(
     replaceGallery(
       addArchitectureExterior(removeArchitectureGallery(bodyWithUpdatedHero)),
@@ -399,9 +436,107 @@ function getOriginalPageParts() {
 
   const style = `${originalStyle}
 
-  /* Keep the top of tall shrine portraits visible and discard the camera strip at the bottom. */
-  .hero-slide-img.crop-from-bottom{
-    object-position:center top;
+  /* ---------- Hero carousel ---------- */
+  .hero-inner{
+    grid-template-columns:0.92fr 1.08fr;
+    gap:56px;
+  }
+  .hero-portrait{
+    justify-content:flex-end;
+  }
+  .portrait-frame{
+    width:min(640px, 92vw);
+    aspect-ratio:4 / 3;
+  }
+  .portrait-frame .clip{
+    background:#0b0805;
+  }
+  .hero-track{
+    display:flex;
+    width:100%;
+    height:100%;
+    will-change:transform;
+    transition:transform .9s cubic-bezier(.22,.76,.34,1);
+  }
+  .hero-slide{
+    position:relative;
+    flex:0 0 100%;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+  }
+  .hero-slide::after{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:linear-gradient(to top, rgba(8,5,3,.46), transparent 46%);
+    pointer-events:none;
+  }
+  .hero-slide-media{
+    display:block;
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    transform:scale(1.07);
+    transition:transform 9s ease-out;
+  }
+  .hero-slide.active .hero-slide-media{
+    transform:scale(1);
+  }
+  .hero-arrow{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    z-index:4;
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    border:1px solid rgba(212,160,23,.38);
+    background:rgba(11,8,5,.82);
+    color:var(--gold-bright);
+    font:400 1.9rem/1 'Cormorant Garamond',serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    opacity:0;
+    transition:opacity .3s ease,background .22s ease,color .22s ease,transform .12s ease;
+  }
+  .hero-portrait:hover .hero-arrow,
+  .hero-arrow:focus-visible{
+    opacity:1;
+  }
+  .hero-arrow:hover{
+    background:rgba(212,160,23,.18);
+    color:var(--ivory);
+  }
+  .hero-arrow:active{
+    transform:translateY(-50%) scale(.95);
+  }
+  .hero-arrow:focus-visible{
+    outline:2px solid var(--gold-bright);
+    outline-offset:3px;
+  }
+  .hero-arrow-prev{ left:-20px; }
+  .hero-arrow-next{ right:-20px; }
+  .portrait-caption{
+    bottom:-18px;
+    max-width:92%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  @media (max-width:880px){
+    .hero-inner{ grid-template-columns:1fr; }
+    .hero-portrait{ justify-content:center; }
+    .portrait-frame{ width:min(640px, 100%); }
+    .hero-arrow{ width:38px; height:38px; font-size:1.6rem; opacity:1; }
+    .hero-arrow-prev{ left:6px; }
+    .hero-arrow-next{ right:6px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .hero-track{ transition:none; }
+    .hero-slide-media,
+    .hero-slide.active .hero-slide-media{ transform:none; transition:none; }
   }
 
   header.nav .brand-logo{

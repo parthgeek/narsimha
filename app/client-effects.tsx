@@ -5,8 +5,17 @@ import type { LatLngExpression, Map as LeafletMap } from "leaflet";
 
 export default function ClientEffects() {
   useEffect(() => {
-    const slides = Array.from(document.querySelectorAll<HTMLElement>(".hero-slide-img"));
+    const slides = Array.from(document.querySelectorAll<HTMLElement>("[data-hero-slide]"));
+    const heroTrack = document.querySelector<HTMLElement>("[data-hero-track]");
+    const heroCarousel = document.querySelector<HTMLElement>("[data-hero-carousel]");
+    const heroCaption = document.querySelector<HTMLElement>("[data-hero-caption]");
+    const heroPrevButton = document.querySelector<HTMLButtonElement>("[data-hero-prev]");
+    const heroNextButton = document.querySelector<HTMLButtonElement>("[data-hero-next]");
+    const heroViewport = heroCarousel?.closest<HTMLElement>(".hero-portrait") ?? heroCarousel;
     const dotsWrap = document.getElementById("heroDots");
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     let current = 0;
     let intervalId: ReturnType<typeof setInterval> | undefined;
 
@@ -19,36 +28,137 @@ export default function ClientEffects() {
 
     const syncHeroVideoPlayback = () => {
       slides.forEach((slide, index) => {
-        if (!(slide instanceof HTMLVideoElement)) return;
-        forceMutedVideo(slide);
-        if (index === current && slide.classList.contains("active")) {
-          void slide.play().catch(() => undefined);
+        const video = slide.querySelector("video");
+        if (!video) return;
+        forceMutedVideo(video);
+        if (index === current) {
+          void video.play().catch(() => undefined);
         } else {
-          slide.pause();
+          video.pause();
         }
       });
     };
 
-    const goTo = (index: number) => {
-      if (!slides.length || !dotsWrap?.children.length) return;
-      slides[current]?.classList.remove("active");
-      dotsWrap.children[current]?.classList.remove("active");
-      current = index;
-      slides[current]?.classList.add("active");
-      dotsWrap.children[current]?.classList.add("active");
+    const renderHeroSlide = () => {
+      if (heroTrack) {
+        heroTrack.style.transform = `translate3d(-${current * 100}%, 0, 0)`;
+      }
+      slides.forEach((slide, index) => {
+        const active = index === current;
+        slide.classList.toggle("active", active);
+        if (active) slide.removeAttribute("aria-hidden");
+        else slide.setAttribute("aria-hidden", "true");
+      });
+      if (dotsWrap) {
+        Array.from(dotsWrap.children).forEach((dot, index) => {
+          dot.classList.toggle("active", index === current);
+          dot.setAttribute("aria-selected", String(index === current));
+        });
+      }
+      const caption = slides[current]?.dataset.heroCaptionText;
+      if (heroCaption && caption) heroCaption.textContent = caption;
       syncHeroVideoPlayback();
     };
 
-    if (dotsWrap && slides.length) {
-      dotsWrap.replaceChildren();
-      slides.forEach((_, index) => {
-        const button = document.createElement("button");
-        if (index === 0) button.classList.add("active");
-        button.addEventListener("click", () => goTo(index));
-        dotsWrap.appendChild(button);
-      });
-      intervalId = setInterval(() => goTo((current + 1) % slides.length), 5200);
-      syncHeroVideoPlayback();
+    const goTo = (index: number) => {
+      if (!slides.length) return;
+      current = (index + slides.length) % slides.length;
+      renderHeroSlide();
+    };
+
+    const goToNextSlide = () => goTo(current + 1);
+    const goToPrevSlide = () => goTo(current - 1);
+
+    const stopHeroAutoplay = () => {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = undefined;
+    };
+
+    const startHeroAutoplay = () => {
+      if (prefersReducedMotion || slides.length < 2) return;
+      stopHeroAutoplay();
+      intervalId = setInterval(goToNextSlide, 5600);
+    };
+
+    const restartHeroAutoplay = () => {
+      stopHeroAutoplay();
+      startHeroAutoplay();
+    };
+
+    const handleHeroPrev = () => {
+      goToPrevSlide();
+      restartHeroAutoplay();
+    };
+    const handleHeroNext = () => {
+      goToNextSlide();
+      restartHeroAutoplay();
+    };
+    const handleHeroKeydown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        handleHeroPrev();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        handleHeroNext();
+      }
+    };
+
+    let heroPointerX: number | null = null;
+    const handleHeroPointerDown = (event: PointerEvent) => {
+      heroPointerX = event.clientX;
+      stopHeroAutoplay();
+    };
+    const handleHeroPointerUp = (event: PointerEvent) => {
+      if (heroPointerX === null) return;
+      const delta = event.clientX - heroPointerX;
+      heroPointerX = null;
+      if (Math.abs(delta) > 44) {
+        if (delta < 0) goToNextSlide();
+        else goToPrevSlide();
+      }
+      startHeroAutoplay();
+    };
+
+    const handleHeroVisibility = () => {
+      if (document.hidden) stopHeroAutoplay();
+      else startHeroAutoplay();
+    };
+
+    const heroDotHandlers: { button: HTMLButtonElement; handler: () => void }[] = [];
+
+    if (slides.length) {
+      if (dotsWrap) {
+        dotsWrap.replaceChildren();
+        dotsWrap.setAttribute("role", "tablist");
+        slides.forEach((_, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.setAttribute("role", "tab");
+          button.setAttribute("aria-label", `Show photograph ${index + 1}`);
+          const handler = () => {
+            goTo(index);
+            restartHeroAutoplay();
+          };
+          button.addEventListener("click", handler);
+          heroDotHandlers.push({ button, handler });
+          dotsWrap.appendChild(button);
+        });
+      }
+
+      heroPrevButton?.addEventListener("click", handleHeroPrev);
+      heroNextButton?.addEventListener("click", handleHeroNext);
+      heroCarousel?.addEventListener("pointerdown", handleHeroPointerDown);
+      heroCarousel?.addEventListener("pointerup", handleHeroPointerUp);
+      heroCarousel?.addEventListener("pointercancel", handleHeroPointerUp);
+      heroCarousel?.addEventListener("keydown", handleHeroKeydown);
+      heroViewport?.addEventListener("mouseenter", stopHeroAutoplay);
+      heroViewport?.addEventListener("mouseleave", startHeroAutoplay);
+      document.addEventListener("visibilitychange", handleHeroVisibility);
+
+      if (heroCarousel) heroCarousel.tabIndex = 0;
+
+      renderHeroSlide();
+      startHeroAutoplay();
     }
 
     const navEl = document.getElementById("siteNav");
@@ -437,7 +547,19 @@ export default function ClientEffects() {
     });
     return () => {
       mapEffectDisposed = true;
-      if (intervalId) clearInterval(intervalId);
+      stopHeroAutoplay();
+      heroPrevButton?.removeEventListener("click", handleHeroPrev);
+      heroNextButton?.removeEventListener("click", handleHeroNext);
+      heroCarousel?.removeEventListener("pointerdown", handleHeroPointerDown);
+      heroCarousel?.removeEventListener("pointerup", handleHeroPointerUp);
+      heroCarousel?.removeEventListener("pointercancel", handleHeroPointerUp);
+      heroCarousel?.removeEventListener("keydown", handleHeroKeydown);
+      heroViewport?.removeEventListener("mouseenter", stopHeroAutoplay);
+      heroViewport?.removeEventListener("mouseleave", startHeroAutoplay);
+      document.removeEventListener("visibilitychange", handleHeroVisibility);
+      heroDotHandlers.forEach(({ button, handler }) => {
+        button.removeEventListener("click", handler);
+      });
       window.removeEventListener("scroll", handleScroll);
       observer?.disconnect();
       figureHandlers.forEach(({ figure, handler }) => {
@@ -453,7 +575,7 @@ export default function ClientEffects() {
       window.removeEventListener("resize", handleVideoResize);
       galleryVideos.forEach((video) => video.pause());
       slides.forEach((slide) => {
-        if (slide instanceof HTMLVideoElement) slide.pause();
+        slide.querySelector("video")?.pause();
       });
       templeMap?.remove();
       templeScene?.removeEventListener("pointerdown", handlePointerDown);
