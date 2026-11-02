@@ -3,9 +3,17 @@ import path from "node:path";
 import ChantPlayer from "./chant-player";
 import ClientEffects from "./client-effects";
 
-// Wide-format slides for the hero carousel. Portrait sources are kept out of
-// this set — the frame is landscape, so anything taller than it crops badly.
+// Slides for the hero carousel. Wide views fill the landscape frame; portrait
+// shrine photographs are shown whole (`portrait: true`) over a blurred fill of
+// themselves, so nothing is cropped off the deity.
 const heroSlides = [
+  {
+    src: "/media/deity/deity-yoga-narasimha.jpg",
+    alt: "Sri Yoga Narasimha in the sanctum, garlanded and flanked by oil lamps",
+    caption: "Sri Yoga Narasimha · Sanctum",
+    objectPosition: "center 50%",
+    portrait: true,
+  },
   {
     src: "/media/temple/temple-night-illuminated.jpg",
     alt: "The Yoga Narasimha Temple lit against the night sky",
@@ -19,6 +27,13 @@ const heroSlides = [
     objectPosition: "center 46%",
   },
   {
+    src: "/media/deity/deity-lakshmi-narayana.jpg",
+    alt: "The Lakshmi Narayana shrine image, dressed and garlanded for darshan",
+    caption: "Lakshmi Narayana · Parivara Shrine",
+    objectPosition: "center 50%",
+    portrait: true,
+  },
+  {
     src: "/media/temple/temple-aerial-northeast.jpg",
     alt: "Aerial view of the temple from the north-east, showing shrine, mandapa and plinth",
     caption: "The Full Plan · From Above",
@@ -29,6 +44,13 @@ const heroSlides = [
     alt: "The tiered vimana rising above the sanctum",
     caption: "The Vimana · Over The Sanctum",
     objectPosition: "center 44%",
+  },
+  {
+    src: "/media/deity/deity-goddess-shrine.jpg",
+    alt: "The goddess shrine image, draped in silk and flowers",
+    caption: "The Goddess · Side Shrine",
+    objectPosition: "center 50%",
+    portrait: true,
   },
   {
     src: "/media/temple/mandapa-interior-colonnade.jpg",
@@ -401,12 +423,15 @@ function getOriginalPageParts() {
   }
 
   const slidesMarkup = heroSlides
-    .map(({ src, alt, caption, objectPosition, video }, index) => {
+    .map(({ src, alt, caption, objectPosition, video, portrait }, index) => {
       const media = video
         ? `<video class="hero-slide-media hero-slide-video" src="${src}" style="object-position:${objectPosition}" muted playsinline loop preload="metadata" disablepictureinpicture aria-label="${escapeHtml(alt)}"></video>`
         : `<img class="hero-slide-media" src="${src}" alt="${escapeHtml(alt)}" style="object-position:${objectPosition}"${index === 0 ? ' fetchpriority="high"' : ' loading="lazy"'}>`;
+      const backdrop = portrait
+        ? `<span class="hero-slide-fill" style="background-image:url('${src}')" aria-hidden="true"></span>`
+        : "";
 
-      return `<div class="hero-slide${index === 0 ? " active" : ""}" data-hero-slide="${index}" data-hero-caption-text="${escapeHtml(caption)}" role="group" aria-roledescription="slide" aria-label="${index + 1} of ${heroSlides.length}"${index === 0 ? "" : ' aria-hidden="true"'}>${media}</div>`;
+      return `<div class="hero-slide${portrait ? " hero-slide-portrait" : ""}${index === 0 ? " active" : ""}" data-hero-slide="${index}" data-hero-caption-text="${escapeHtml(caption)}" role="group" aria-roledescription="slide" aria-label="${index + 1} of ${heroSlides.length}"${index === 0 ? "" : ' aria-hidden="true"'}>${backdrop}${media}</div>`;
     })
     .join("\n            ");
 
@@ -469,6 +494,7 @@ function getOriginalPageParts() {
     content:'';
     position:absolute;
     inset:0;
+    z-index:2;
     background:linear-gradient(to top, rgba(8,5,3,.46), transparent 46%);
     pointer-events:none;
   }
@@ -482,6 +508,27 @@ function getOriginalPageParts() {
   }
   .hero-slide.active .hero-slide-media{
     transform:scale(1);
+  }
+  /* Portrait shrine photographs are shown whole over a blurred fill of themselves. */
+  .hero-slide-fill{
+    position:absolute;
+    inset:0;
+    background-size:cover;
+    background-position:center;
+    filter:blur(26px) saturate(.85) brightness(.42);
+    transform:scale(1.18);
+  }
+  .hero-slide-portrait .hero-slide-media{
+    position:relative;
+    z-index:1;
+    object-fit:contain;
+    transform:scale(1);
+  }
+  .hero-slide-portrait.active .hero-slide-media{
+    transform:scale(1.02);
+  }
+  .hero-slide-portrait::after{
+    background:linear-gradient(to top, rgba(8,5,3,.34), transparent 40%);
   }
   .hero-arrow{
     position:absolute;
@@ -536,7 +583,9 @@ function getOriginalPageParts() {
   @media (prefers-reduced-motion:reduce){
     .hero-track{ transition:none; }
     .hero-slide-media,
-    .hero-slide.active .hero-slide-media{ transform:none; transition:none; }
+    .hero-slide.active .hero-slide-media,
+    .hero-slide-portrait .hero-slide-media,
+    .hero-slide-portrait.active .hero-slide-media{ transform:none; transition:none; }
   }
 
   header.nav .brand-logo{
